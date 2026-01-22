@@ -20,14 +20,19 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.text.input.PasswordVisualTransformation
 import androidx.compose.ui.unit.dp
 import org.jetbrains.compose.resources.painterResource
 import sitacardent.composeapp.generated.resources.Res
 import sitacardent.composeapp.generated.resources.sita_logo
 
 @Composable
-fun LoginScreen() {
-    var email by remember { mutableStateOf("") }
+fun LoginScreen(onLoginSuccess: (String) -> Unit) {
+    // Initialize with saved credentials immediately
+    val savedUser = remember { LocalStorage.getUser() }
+    var email by remember { mutableStateOf(savedUser?.first ?: "") }
+    var password by remember { mutableStateOf(savedUser?.second ?: "") }
+    var errorMessage by remember { mutableStateOf<String?>(null) }
     
     Column(
         modifier = Modifier
@@ -50,11 +55,33 @@ fun LoginScreen() {
             label = { Text("Email ID") },
             modifier = Modifier.fillMaxWidth()
         )
+
+        Spacer(modifier = Modifier.height(16.dp))
+
+        OutlinedTextField(
+            value = password,
+            onValueChange = { password = it },
+            label = { Text("Password") },
+            visualTransformation = PasswordVisualTransformation(),
+            modifier = Modifier.fillMaxWidth()
+        )
+        
+        if (errorMessage != null) {
+            Spacer(modifier = Modifier.height(8.dp))
+            Text(text = errorMessage!!, color = androidx.compose.ui.graphics.Color.Red)
+        }
         
         Spacer(modifier = Modifier.height(24.dp))
         
         Button(
-            onClick = { /* Handle Login */ },
+            onClick = { 
+                if (email == "g3goddodroad@gmail.com" && password == "dnpp@4488") {
+                    LocalStorage.saveUser(email, password)
+                    onLoginSuccess(email)
+                } else {
+                    errorMessage = "Invalid Credentials"
+                }
+            },
             modifier = Modifier.fillMaxWidth()
         ) {
             Text("Login")
