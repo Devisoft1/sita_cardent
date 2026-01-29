@@ -1,6 +1,7 @@
 package com.example.sitacardent
 
 import android.app.PendingIntent
+import android.content.Context
 import android.content.Intent
 import android.content.IntentFilter
 import android.nfc.NfcAdapter
@@ -41,6 +42,8 @@ class NfcScanActivity : AppCompatActivity() {
     private lateinit var etInvoiceAmount: TextInputEditText
     private lateinit var btnConfirm: Button
     private lateinit var btnCancel: Button
+    private lateinit var btnCancelScanning: Button
+    private lateinit var btnLogout: View
     private lateinit var btnBack: View
     private lateinit var tvHeaderTitle: TextView
     private lateinit var cardLogo: View
@@ -48,6 +51,16 @@ class NfcScanActivity : AppCompatActivity() {
     private var currentTag: Tag? = null
     private var pendingAmountToWrite: String? = null
     private var isScanning = false
+
+    private val timeoutHandler = android.os.Handler(android.os.Looper.getMainLooper())
+    private val timeoutRunnable = Runnable { 
+        Log.d(TAG, "NFC Scan Timeout reached (1 min).")
+        isScanning = false
+        disableForegroundDispatch()
+        btnCancelScanning.visibility = View.GONE
+        tvInstruction.text = "No card detected\nPlease try again"
+        tvInstruction.setTextColor(android.graphics.Color.RED)
+    }
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -65,6 +78,8 @@ class NfcScanActivity : AppCompatActivity() {
         etInvoiceAmount = findViewById(R.id.etInvoiceAmount)
         btnConfirm = findViewById(R.id.btnConfirm)
         btnCancel = findViewById(R.id.btnCancel)
+        btnCancelScanning = findViewById(R.id.btnCancelScanning)
+        btnLogout = findViewById(R.id.btnLogout)
         btnBack = findViewById(R.id.btnBack)
         tvHeaderTitle = findViewById(R.id.tvHeaderTitle)
 
@@ -80,6 +95,17 @@ class NfcScanActivity : AppCompatActivity() {
             finish()
         }
 
+        btnLogout.setOnClickListener {
+            // Logout logic: Just go back to login screen.
+            // MainActivity's logic already handles autofill if credentials exist.
+            
+            // Navigate back to Login (MainActivity)
+            val intent = Intent(this, MainActivity::class.java)
+            intent.flags = Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TASK
+            startActivity(intent)
+            finish()
+        }
+
         cardLogo.setOnClickListener {
             if (nfcAdapter == null) {
                 Log.e(TAG, "NFC is not supported.")
@@ -87,7 +113,14 @@ class NfcScanActivity : AppCompatActivity() {
                 isScanning = true
                 enableForegroundDispatch()
                 tvInstruction.text = "Searching for card...\nHold it near the back"
-                // Optional: Provide tactile feedback
+                tvInstruction.setTextColor(android.graphics.Color.GRAY) // Reset to standard color
+                btnCancelScanning.visibility = View.VISIBLE
+                
+                Log.d(TAG, "User started scanning (Logo tap)")
+                // Start timeout timer (1 minute)
+                timeoutHandler.removeCallbacks(timeoutRunnable)
+                timeoutHandler.postDelayed(timeoutRunnable, 60000)
+                Log.d(TAG, "Scan timeout timer started (60s)")
             }
         }
 
@@ -98,12 +131,14 @@ class NfcScanActivity : AppCompatActivity() {
                 enableForegroundDispatch()
                 tvInstruction.visibility = View.VISIBLE
                 tvInstruction.text = "READY TO SAVE: \$$amount\nTap card to finalize"
+                btnCancelScanning.visibility = View.VISIBLE
                 Log.d(TAG, "Confirm clicked. Pending write: $amount. Scanner re-enabled.")
             } else {
                 etInvoiceAmount.error = "Enter amount first"
             }
         }
         btnCancel.setOnClickListener { resetUI() }
+        btnCancelScanning.setOnClickListener { resetUI() }
     }
 
     // NEW: Helper to authenticate with multiple keys
@@ -126,6 +161,7 @@ class NfcScanActivity : AppCompatActivity() {
         if (intent.action == NfcAdapter.ACTION_TAG_DISCOVERED ||
             intent.action == NfcAdapter.ACTION_TECH_DISCOVERED) {
 
+            Log.d(TAG, "NFC Tag Detected via action: ${intent.action}")
             val tag = intent.getParcelableExtra<Tag>(NfcAdapter.EXTRA_TAG)
             tag?.let {
                 currentTag = it
@@ -238,6 +274,9 @@ class NfcScanActivity : AppCompatActivity() {
         // STOP SCANNING once data is shown
         isScanning = false
         disableForegroundDispatch()
+        btnCancelScanning.visibility = View.GONE
+        timeoutHandler.removeCallbacks(timeoutRunnable)
+        Log.d(TAG, "Scan timeout timer cancelled (Data displayed)")
         Log.d(TAG, "Member data shown in center. Scanner disabled.")
     }
 
@@ -264,10 +303,15 @@ class NfcScanActivity : AppCompatActivity() {
         groupMemberInfo.visibility = View.GONE
         etInvoiceAmount.text?.clear()
         tvInstruction.text = "Tap the SITA logo to scan a new card"
+        tvInstruction.setTextColor(android.graphics.Color.GRAY)
         isScanning = false
         currentTag = null
         pendingAmountToWrite = null // Clear pending state
+        btnCancelScanning.visibility = View.GONE
+        timeoutHandler.removeCallbacks(timeoutRunnable)
+        Log.d(TAG, "Scan timeout timer cancelled (UI Reset)")
         disableForegroundDispatch()
+        Log.d(TAG, "UI Reset complete. Scanner disabled.")
     }
 
     // Standard Dispatching logic

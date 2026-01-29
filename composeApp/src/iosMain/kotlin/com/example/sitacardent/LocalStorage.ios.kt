@@ -5,6 +5,7 @@ import platform.Foundation.NSUserDefaults
 actual object LocalStorage {
     private const val KEY_EMAIL = "com.example.sitacardent.user_email"
     private const val KEY_PASS = "com.example.sitacardent.user_password"
+    private const val KEY_LOGGED_IN = "com.example.sitacardent.is_logged_in"
 
     actual fun getUser(): Pair<String, String>? {
         val userDefaults = NSUserDefaults.standardUserDefaults
@@ -29,6 +30,16 @@ actual object LocalStorage {
         val userDefaults = NSUserDefaults.standardUserDefaults
         userDefaults.removeObjectForKey(KEY_EMAIL)
         userDefaults.removeObjectForKey(KEY_PASS)
+        userDefaults.synchronize()
+    }
+
+    actual fun isLoggedIn(): Boolean {
+        return NSUserDefaults.standardUserDefaults.boolForKey(KEY_LOGGED_IN)
+    }
+
+    actual fun setLoggedIn(loggedIn: Boolean) {
+        val userDefaults = NSUserDefaults.standardUserDefaults
+        userDefaults.setBool(loggedIn, forKey = KEY_LOGGED_IN)
         userDefaults.synchronize()
     }
 }

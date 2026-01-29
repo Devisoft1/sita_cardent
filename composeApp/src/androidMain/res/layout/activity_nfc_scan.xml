@@ -37,6 +37,22 @@
             app:layout_constraintTop_toTopOf="parent"
             android:contentDescription="Go Back" />
 
+        <!-- Logout Button -->
+        <ImageButton
+            android:id="@+id/btnLogout"
+            android:layout_width="@dimen/_40sdp"
+            android:layout_height="@dimen/_40sdp"
+            android:layout_marginEnd="@dimen/_12sdp"
+            android:layout_marginTop="@dimen/_24sdp"
+            android:background="?attr/selectableItemBackgroundBorderless"
+            android:padding="@dimen/_8sdp"
+            android:scaleType="centerInside"
+            android:src="@android:drawable/ic_lock_power_off"
+            app:layout_constraintEnd_toEndOf="parent"
+            app:layout_constraintTop_toTopOf="parent"
+            android:contentDescription="Logout"
+            android:tint="@color/white" />
+
         <!-- Top Title & Subtitle -->
         <LinearLayout
             android:id="@+id/headerTextContainer"
@@ -101,6 +117,21 @@
             app:layout_constraintEnd_toEndOf="parent"
             app:layout_constraintStart_toStartOf="parent"
             app:layout_constraintTop_toBottomOf="@+id/cardLogo" />
+
+        <com.google.android.material.button.MaterialButton
+            android:id="@+id/btnCancelScanning"
+            style="@style/Widget.MaterialComponents.Button.TextButton"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="Cancel Scanning"
+            android:textAllCaps="false"
+            android:textColor="#D32F2F"
+            android:textSize="@dimen/_11ssp"
+            android:visibility="gone"
+            app:layout_constraintEnd_toEndOf="parent"
+            app:layout_constraintStart_toStartOf="parent"
+            app:layout_constraintTop_toBottomOf="@id/tvInstruction"
+            tools:visibility="visible" />
 
         <androidx.constraintlayout.widget.Group
             android:id="@+id/groupMemberInfo"

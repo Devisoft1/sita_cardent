@@ -6,24 +6,25 @@ import androidx.compose.runtime.*
 @Composable
 fun App() {
     MaterialTheme {
-        // Check for saved credentials immediately on startup
-        var loggedInEmail by remember { 
-            mutableStateOf(LocalStorage.getUser()?.first) 
+        // Check for active session immediately on startup
+        var isSessionActive by remember { 
+            mutableStateOf(LocalStorage.isLoggedIn()) 
         }
 
-        if (loggedInEmail == null) {
+        if (!isSessionActive) {
             LoginScreen(
-                onLoginSuccess = { email ->
-                    loggedInEmail = email
+                onLoginSuccess = { _ ->
+                    isSessionActive = true
                 }
             )
         } else {
+            val user = LocalStorage.getUser()
             NfcScanScreen(
-                userEmail = loggedInEmail!!,
+                userEmail = user?.first ?: "User",
                 onBackClick = {
-                    // Treat back as logout: clear saved login so user is asked next time
-                    LocalStorage.clearUser()
-                    loggedInEmail = null
+                    // Treat back as logout: clear session but keep credentials
+                    LocalStorage.setLoggedIn(false)
+                    isSessionActive = false
                 }
             )
         }

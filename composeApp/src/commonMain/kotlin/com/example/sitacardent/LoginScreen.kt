@@ -77,210 +77,222 @@ fun LoginScreen(onLoginSuccess: (String) -> Unit) {
             .fillMaxSize()
             .background(BgLight)
     ) {
-        Column(
-            modifier = Modifier
-                .fillMaxSize()
-                .verticalScroll(rememberScrollState()),
-            horizontalAlignment = Alignment.CenterHorizontally,
-            verticalArrangement = Arrangement.Center
+        Box(
+            modifier = Modifier.fillMaxSize(),
+            contentAlignment = Alignment.Center
         ) {
-            // Logo
-            Image(
-                painter = painterResource(Res.drawable.sita_logo),
-                contentDescription = "SITA Logo",
-                modifier = Modifier
-                    .size(160.dp)
-                    .zIndex(1f),
-                contentScale = ContentScale.Fit
-            )
-
-            // Login Card
-            Surface(
+            Column(
                 modifier = Modifier
                     .fillMaxWidth()
-                    .padding(horizontal = 32.dp, vertical = 32.dp), // Vertical margin approx 24sdp
-                shape = RoundedCornerShape(12.dp), // Approx 8sdp
-                shadowElevation = 12.dp,
-                color = Color.White
+                    .verticalScroll(rememberScrollState()),
+                horizontalAlignment = Alignment.CenterHorizontally,
+                verticalArrangement = Arrangement.Center
             ) {
-                Column(
-                    modifier = Modifier.padding(24.dp),
-                    horizontalAlignment = Alignment.CenterHorizontally
+                // Logo
+                Image(
+                    painter = painterResource(Res.drawable.sita_logo),
+                    contentDescription = "SITA Logo",
+                    modifier = Modifier
+                        .size(200.dp)
+                        .zIndex(1f),
+                    contentScale = ContentScale.Fit
+                )
+
+                // Login Card
+                Surface(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(
+                            horizontal = 16.dp,
+                            vertical = 32.dp
+                        ), // Reduced from 32.dp to 16.dp
+                    shape = RoundedCornerShape(12.dp), // Approx 8sdp
+                    shadowElevation = 12.dp,
+                    color = Color.White
                 ) {
-                    Spacer(modifier = Modifier.height(16.dp))
-
-                    // Email Input
-                    OutlinedTextField(
-                        value = email,
-                        onValueChange = { email = it },
-                        label = { Text("Email Address") },
-                        leadingIcon = {
-                            Icon(
-                                imageVector = Icons.Filled.Email,
-                                contentDescription = "Email Icon",
-                                tint = SitaBlue
-                            )
-                        },
-                        colors = OutlinedTextFieldDefaults.colors(
-                            focusedContainerColor = Color.Transparent,
-                            unfocusedContainerColor = Color.Transparent,
-                            focusedBorderColor = SitaBlue,
-                            unfocusedBorderColor = TextSecondary,
-                            focusedLabelColor = SitaBlue,
-                            cursorColor = SitaBlue
-                        ),
-                        modifier = Modifier.fillMaxWidth(),
-                        singleLine = true,
-                        shape = RoundedCornerShape(8.dp)
-                    )
-
-                    Spacer(modifier = Modifier.height(20.dp))
-
-                    // Password Input
-                    OutlinedTextField(
-                        value = password,
-                        onValueChange = { password = it },
-                        label = { Text("Password") },
-                        leadingIcon = {
-                            Icon(
-                                imageVector = Icons.Filled.Lock,
-                                contentDescription = "Lock Icon",
-                                tint = SitaBlue
-                            )
-                        },
-                        trailingIcon = {
-                            val image = if (passwordVisible)
-                                Icons.Filled.Visibility
-                            else
-                                Icons.Filled.VisibilityOff
-
-                            val description = if (passwordVisible) "Hide password" else "Show password"
-
-                            IconButton(onClick = { passwordVisible = !passwordVisible }) {
-                                Icon(imageVector = image, description)
-                            }
-                        },
-                        visualTransformation = if (passwordVisible) VisualTransformation.None else PasswordVisualTransformation(),
-                        colors = OutlinedTextFieldDefaults.colors(
-                            focusedContainerColor = Color.Transparent,
-                            unfocusedContainerColor = Color.Transparent,
-                            focusedBorderColor = SitaBlue,
-                            unfocusedBorderColor = TextSecondary,
-                            focusedLabelColor = SitaBlue,
-                            cursorColor = SitaBlue
-                        ),
-                        modifier = Modifier.fillMaxWidth(),
-                        singleLine = true,
-                        shape = RoundedCornerShape(8.dp)
-                    )
-
-                    // Remember Me Checkbox
-                    Row(
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .padding(top = 12.dp),
-                        verticalAlignment = Alignment.CenterVertically
+                    Column(
+                        modifier = Modifier.padding(16.dp), // Reduced from 24.dp to 16.dp
+                        horizontalAlignment = Alignment.CenterHorizontally
                     ) {
-                        Checkbox(
-                            checked = rememberMe,
-                            onCheckedChange = { rememberMe = it },
-                            colors = CheckboxDefaults.colors(checkedColor = SitaBlue)
-                        )
-                        Text(
-                            text = "Remember Me",
-                            color = TextSecondary,
-                            fontSize = 14.sp
-                        )
-                    }
+                        Spacer(modifier = Modifier.height(16.dp))
 
-                    // Forgot Password
-                    Box(
-                        modifier = Modifier.fillMaxWidth(),
-                        contentAlignment = Alignment.CenterEnd
-                    ) {
-                        Text(
-                            text = "Forgot Password?",
-                            color = SitaBlue,
-                            fontWeight = FontWeight.Bold,
-                            fontSize = 14.sp,
+                        // Email Input
+                        OutlinedTextField(
+                            value = email,
+                            onValueChange = { email = it },
+                            label = { Text("Email Address") },
+                            leadingIcon = {
+                                Icon(
+                                    imageVector = Icons.Filled.Email,
+                                    contentDescription = "Email Icon",
+                                    tint = SitaBlue
+                                )
+                            },
+                            colors = OutlinedTextFieldDefaults.colors(
+                                focusedContainerColor = Color.Transparent,
+                                unfocusedContainerColor = Color.Transparent,
+                                focusedBorderColor = SitaBlue,
+                                unfocusedBorderColor = TextSecondary,
+                                focusedLabelColor = SitaBlue,
+                                cursorColor = SitaBlue
+                            ),
                             modifier = Modifier
-                                .padding(top = 8.dp)
-                                .clickable { /* TODO: Handle Forgot Password */ }
+                                .fillMaxWidth(),
+                            singleLine = true,
+                            shape = RoundedCornerShape(8.dp)
                         )
-                    }
 
-                    Spacer(modifier = Modifier.height(32.dp))
+                        Spacer(modifier = Modifier.height(20.dp))
 
-                    if (errorMessage != null) {
-                        Text(
-                            text = errorMessage!!,
-                            color = Color.Red,
-                            modifier = Modifier.padding(bottom = 16.dp)
-                        )
-                    }
+                        // Password Input
+                        OutlinedTextField(
+                            value = password,
+                            onValueChange = { password = it },
+                            label = { Text("Password") },
+                            leadingIcon = {
+                                Icon(
+                                    imageVector = Icons.Filled.Lock,
+                                    contentDescription = "Lock Icon",
+                                    tint = SitaBlue
+                                )
+                            },
+                            trailingIcon = {
+                                val image = if (passwordVisible)
+                                    Icons.Filled.Visibility
+                                else
+                                    Icons.Filled.VisibilityOff
 
-                    // Login Button with Gradient
-                    Button(
-                        onClick = {
-                            if (email == "g3goddodroad@gmail.com" && password == "dnpp@4488") {
-                                if (rememberMe) {
-                                    LocalStorage.saveUser(email, password)
-                                } else {
-                                    LocalStorage.clearUser()
+                                val description =
+                                    if (passwordVisible) "Hide password" else "Show password"
+
+                                IconButton(onClick = { passwordVisible = !passwordVisible }) {
+                                    Icon(imageVector = image, description)
                                 }
-                                onLoginSuccess(email)
-                            } else {
-                                errorMessage = "Invalid Credentials"
-                            }
-                        },
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .height(50.dp),
-                        contentPadding = PaddingValues(0.dp),
-                        shape = RoundedCornerShape(8.dp),
-                        colors = ButtonDefaults.buttonColors(containerColor = Color.Transparent)
-                    ) {
-                        Box(
+                            },
+                            visualTransformation = if (passwordVisible) VisualTransformation.None else PasswordVisualTransformation(),
+                            colors = OutlinedTextFieldDefaults.colors(
+                                focusedContainerColor = Color.Transparent,
+                                unfocusedContainerColor = Color.Transparent,
+                                focusedBorderColor = SitaBlue,
+                                unfocusedBorderColor = TextSecondary,
+                                focusedLabelColor = SitaBlue,
+                                cursorColor = SitaBlue
+                            ),
                             modifier = Modifier
-                                .fillMaxSize()
-                                .background(
-                                    brush = Brush.linearGradient(
-                                        colors = listOf(SitaBlue, SitaBlueDark)
-                                    )
-                                ),
-                            contentAlignment = Alignment.Center
+                                .fillMaxWidth(),
+                            singleLine = true,
+                            shape = RoundedCornerShape(8.dp)
+                        )
+
+                        // Remember Me Checkbox
+                        Row(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .padding(top = 12.dp),
+                            verticalAlignment = Alignment.CenterVertically
+                        ) {
+                            Checkbox(
+                                checked = rememberMe,
+                                onCheckedChange = { rememberMe = it },
+                                colors = CheckboxDefaults.colors(checkedColor = SitaBlue)
+                            )
+                            Text(
+                                text = "Remember Me",
+                                color = TextSecondary,
+                                fontSize = 14.sp
+                            )
+                        }
+
+                        // Forgot Password
+                        Box(
+                            modifier = Modifier.fillMaxWidth(),
+                            contentAlignment = Alignment.CenterEnd
                         ) {
                             Text(
-                                text = "Login",
-                                color = Color.White,
-                                fontSize = 18.sp,
-                                fontWeight = FontWeight.Bold
+                                text = "Forgot Password?",
+                                color = SitaBlue,
+                                fontWeight = FontWeight.Bold,
+                                fontSize = 14.sp,
+                                modifier = Modifier
+                                    .padding(top = 8.dp)
+                                    .clickable { /* TODO: Handle Forgot Password */ }
+                            )
+                        }
+
+                        Spacer(modifier = Modifier.height(32.dp))
+
+                        if (errorMessage != null) {
+                            Text(
+                                text = errorMessage!!,
+                                color = Color.Red,
+                                modifier = Modifier.padding(bottom = 16.dp)
+                            )
+                        }
+
+                        // Login Button with Gradient
+                        Button(
+                            onClick = {
+                                if (email == "g3goddodroad@gmail.com" && password == "dnpp@4488") {
+                                    if (rememberMe) {
+                                        LocalStorage.saveUser(email, password)
+                                    } else {
+                                        LocalStorage.clearUser()
+                                    }
+                                    LocalStorage.setLoggedIn(true)
+                                    onLoginSuccess(email)
+                                } else {
+                                    errorMessage = "Invalid Credentials"
+                                }
+                            },
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .height(50.dp),
+                            contentPadding = PaddingValues(0.dp),
+                            shape = RoundedCornerShape(8.dp),
+                            colors = ButtonDefaults.buttonColors(containerColor = Color.Transparent)
+                        ) {
+                            Box(
+                                modifier = Modifier
+                                    .fillMaxSize()
+                                    .background(
+                                        brush = Brush.linearGradient(
+                                            colors = listOf(SitaBlue, SitaBlueDark)
+                                        )
+                                    ),
+                                contentAlignment = Alignment.Center
+                            ) {
+                                Text(
+                                    text = "Login",
+                                    color = Color.White,
+                                    fontSize = 18.sp,
+                                    fontWeight = FontWeight.Bold
+                                )
+                            }
+                        }
+
+                        Spacer(modifier = Modifier.height(32.dp))
+
+                        // Register Link
+                        Row(
+                            verticalAlignment = Alignment.CenterVertically
+                        ) {
+                            Text(
+                                text = "Don't have an account? ",
+                                color = TextSecondary,
+                                fontSize = 15.sp
+                            )
+                            Text(
+                                text = "Register",
+                                color = SitaBlue,
+                                fontWeight = FontWeight.Bold,
+                                fontSize = 15.sp,
+                                modifier = Modifier.clickable { /* TODO: Handle Register */ }
                             )
                         }
                     }
-
-                    Spacer(modifier = Modifier.height(32.dp))
-
-                    // Register Link
-                    Row(
-                        verticalAlignment = Alignment.CenterVertically
-                    ) {
-                        Text(
-                            text = "Don't have an account? ",
-                            color = TextSecondary,
-                            fontSize = 15.sp
-                        )
-                        Text(
-                            text = "Register",
-                            color = SitaBlue,
-                            fontWeight = FontWeight.Bold,
-                            fontSize = 15.sp,
-                            modifier = Modifier.clickable { /* TODO: Handle Register */ }
-                        )
-                    }
                 }
+                Spacer(modifier = Modifier.height(32.dp))
             }
-            Spacer(modifier = Modifier.height(32.dp))
         }
     }
 }

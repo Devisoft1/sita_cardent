@@ -1,11 +1,13 @@
 package com.example.sitacardent
 
 import androidx.compose.foundation.*
+import kotlinx.coroutines.delay
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
+import androidx.compose.material.icons.filled.ExitToApp
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
@@ -42,6 +44,19 @@ fun NfcScanScreen(
     var companyName by remember { mutableStateOf<String?>("Devisoft") }
     var validUpto by remember { mutableStateOf<String?>("31/12/2026") }
     var isScanning by remember { mutableStateOf(false) }
+    var isTimeout by remember { mutableStateOf(false) }
+
+    // Timeout logic: Stop scanning after 1 minute
+    LaunchedEffect(isScanning) {
+        if (isScanning) {
+            isTimeout = false
+            delay(60_000L) // 1 minute
+            if (isScanning) {
+                isScanning = false
+                isTimeout = true
+            }
+        }
+    }
 
     val displayName = userEmail.substringBefore("@")
     val showMemberInfo = memberId != null
@@ -115,6 +130,23 @@ fun NfcScanScreen(
                                 .align(Alignment.TopCenter)
                                 .padding(top = 20.dp)
                         )
+
+                        // Logout Button
+                        IconButton(
+                            onClick = onBackClick, // Using onBackClick as it already handles logout logic in App.kt
+                            modifier = Modifier
+                                .align(Alignment.TopEnd)
+                                .padding(end = 12.dp, top = 8.dp)
+                                .size(52.dp)
+                                .zIndex(2f)
+                        ) {
+                            Icon(
+                                imageVector = Icons.Default.ExitToApp,
+                                contentDescription = "Logout",
+                                tint = Color.White,
+                                modifier = Modifier.size(28.dp)
+                            )
+                        }
                     }
                 }
 
@@ -125,7 +157,10 @@ fun NfcScanScreen(
                         .padding(top = 160.dp)
                         .size(180.dp)
                         .zIndex(10f)
-                        .clickable { isScanning = true }
+                        .clickable { 
+                            isScanning = true 
+                            isTimeout = false
+                        }
                 ) {
                     Image(
                         painter = painterResource(Res.drawable.sita_logo),
@@ -142,18 +177,33 @@ fun NfcScanScreen(
             // Spacer to account for logo overlap
             
             Text(
-                text = if (isScanning)
-                    "Searching for card...\nHold it near the back"
-                else
-                    "Ready to Scan\nTap the logo and bring card close",
+                text = when {
+                    isTimeout -> "No card detected\nPlease try again"
+                    isScanning -> "Searching for card...\nHold it near the back"
+                    else -> "Ready to Scan\nTap the logo and bring card close"
+                },
                 modifier = Modifier
                     .fillMaxWidth()
                     .padding(horizontal = 32.dp, vertical = 8.dp),
                 textAlign = TextAlign.Center,
                 fontSize = 13.sp,
                 lineHeight = 18.sp,
-                color = TextSecondary
+                color = if (isTimeout) Color.Red else TextSecondary
             )
+
+            if (isScanning) {
+                TextButton(
+                    onClick = { isScanning = false },
+                    modifier = Modifier.align(Alignment.CenterHorizontally)
+                ) {
+                    Text(
+                        text = "Cancel Scanning",
+                        color = Color.Red.copy(alpha = 0.7f),
+                        fontSize = 12.sp,
+                        fontWeight = FontWeight.Medium
+                    )
+                }
+            }
 
             /* ================= MEMBER DETAILS CARD ================= */
 
@@ -284,7 +334,10 @@ fun NfcScanScreen(
                         }
 
                         Button(
-                            onClick = { isScanning = true },
+                            onClick = { 
+                                isScanning = true 
+                                isTimeout = false
+                            },
                             modifier = Modifier
                                 .weight(1.5f)
                                 .height(48.dp),

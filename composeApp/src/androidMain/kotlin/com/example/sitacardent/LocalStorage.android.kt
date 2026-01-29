@@ -7,6 +7,7 @@ actual object LocalStorage {
     private const val PREFS_NAME = "LoginPrefs"
     private const val KEY_EMAIL = "email"
     private const val KEY_PASS = "password"
+    private const val KEY_LOGGED_IN = "is_logged_in"
 
     @Volatile
     private var prefs: SharedPreferences? = null
@@ -38,6 +39,14 @@ actual object LocalStorage {
     actual fun clearUser() {
         val p = prefs ?: return
         p.edit().remove(KEY_EMAIL).remove(KEY_PASS).apply()
+    }
+
+    actual fun isLoggedIn(): Boolean {
+        return prefs?.getBoolean(KEY_LOGGED_IN, false) ?: false
+    }
+
+    actual fun setLoggedIn(loggedIn: Boolean) {
+        prefs?.edit()?.putBoolean(KEY_LOGGED_IN, loggedIn)?.apply()
     }
 }
 
