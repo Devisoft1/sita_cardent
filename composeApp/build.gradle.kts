@@ -44,6 +44,7 @@ kotlin {
             implementation(libs.androidx.lifecycle.viewmodelCompose)
             implementation(libs.androidx.lifecycle.runtimeCompose)
             implementation(libs.androidx.navigation.compose)
+            implementation(libs.compose.material.icons.extended)
         }
         commonTest.dependencies {
             implementation(libs.kotlin.test)
@@ -82,3 +83,25 @@ dependencies {
     debugImplementation(libs.compose.ui.tooling)
 }
 
+// Custom tasks for iOS development
+tasks.register("openXcode") {
+    group = "ios"
+    description = "Open the iOS project in Xcode"
+    doLast {
+        exec {
+            commandLine("open", "${project.rootDir}/iosApp/iosApp.xcodeproj")
+        }
+    }
+}
+
+tasks.register("buildIosFramework") {
+    group = "ios"
+    description = "Build iOS framework for simulator"
+    dependsOn("linkDebugFrameworkIosSimulatorArm64")
+}
+
+tasks.register("runIosSimulator") {
+    group = "ios"
+    description = "Build framework and open Xcode to run on simulator"
+    dependsOn("buildIosFramework", "openXcode")
+}

@@ -96,12 +96,22 @@
 
                 </com.google.android.material.textfield.TextInputLayout>
 
+                <CheckBox
+                    android:id="@+id/cbRememberMe"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="@dimen/_12sdp"
+                    android:text="Remember Me"
+                    android:textColor="@color/text_secondary"
+                    android:textSize="@dimen/_12ssp"
+                    android:buttonTint="@color/sita_blue" />
+
                 <TextView
                     android:id="@+id/tvForgotPassword"
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
                     android:layout_gravity="end"
-                    android:layout_marginTop="@dimen/_12sdp"
+                    android:layout_marginTop="@dimen/_8sdp"
                     android:text="Forgot Password?"
                     android:textColor="@color/sita_blue"
                     android:textSize="@dimen/_12ssp"

@@ -69,7 +69,7 @@ fun NfcScanScreen(
                 Box(
                     modifier = Modifier
                         .fillMaxWidth()
-                        .height(160.dp)
+                        .height(240.dp)
                         .background(
                             Brush.linearGradient(
                                 colors = listOf(
@@ -81,42 +81,49 @@ fun NfcScanScreen(
                             )
                         )
                 ) {
-                    // Back Button
-                    IconButton(
-                        onClick = onBackClick,
+                    // Content Container with Safe Area Padding
+                    Box(
                         modifier = Modifier
-                            .align(Alignment.TopStart)
-                            .padding(start = 12.dp, top = 24.dp)
-                            .size(40.dp)
-                            .zIndex(2f)
+                            .fillMaxSize()
+                            .windowInsetsPadding(WindowInsets.statusBars)
                     ) {
-                        Icon(
-                            imageVector = Icons.AutoMirrored.Filled.ArrowBack,
-                            contentDescription = "Go Back",
-                            tint = Color.White,
-                            modifier = Modifier.size(24.dp)
+                        // Back Button
+                        IconButton(
+                            onClick = onBackClick,
+                            modifier = Modifier
+                                .align(Alignment.TopStart)
+                                .padding(start = 12.dp, top = 8.dp)
+                                .size(52.dp)
+                                .zIndex(2f)
+                        ) {
+                            Icon(
+                                imageVector = Icons.AutoMirrored.Filled.ArrowBack,
+                                contentDescription = "Go Back",
+                                tint = Color.White,
+                                modifier = Modifier.size(28.dp)
+                            )
+                        }
+
+                        // Username title
+                        Text(
+                            text = displayName,
+                            color = Color.White,
+                            fontSize = 20.sp,
+                            fontWeight = FontWeight.Bold,
+                            letterSpacing = 0.05.sp,
+                            modifier = Modifier
+                                .align(Alignment.TopCenter)
+                                .padding(top = 20.dp)
                         )
                     }
-
-                    // Username title
-                    Text(
-                        text = displayName,
-                        color = Color.White,
-                        fontSize = 18.sp,
-                        fontWeight = FontWeight.Bold,
-                        letterSpacing = 0.05.sp,
-                        modifier = Modifier
-                            .align(Alignment.TopCenter)
-                            .padding(top = 32.dp)
-                    )
                 }
 
                 // Logo positioned to overlap header and content
                 Box(
                     modifier = Modifier
                         .align(Alignment.TopCenter)
-                        .padding(top = 100.dp)
-                        .size(120.dp)
+                        .padding(top = 160.dp)
+                        .size(180.dp)
                         .zIndex(10f)
                         .clickable { isScanning = true }
                 ) {
@@ -133,7 +140,6 @@ fun NfcScanScreen(
             /* ============ INSTRUCTION TEXT ============ */
 
             // Spacer to account for logo overlap
-            Spacer(modifier = Modifier.height(40.dp))
             
             Text(
                 text = if (isScanning)
