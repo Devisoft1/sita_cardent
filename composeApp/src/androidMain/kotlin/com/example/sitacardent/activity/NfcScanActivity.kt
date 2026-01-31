@@ -1,4 +1,4 @@
-package com.example.sitacardent
+package com.example.sitacardent.activity
 
 import android.app.PendingIntent
 import android.content.Context
@@ -16,7 +16,14 @@ import android.widget.ImageView
 import android.widget.TextView
 import androidx.appcompat.app.AppCompatActivity
 import androidx.constraintlayout.widget.Group
+import android.view.LayoutInflater
+import android.widget.Toast
+import androidx.appcompat.app.AlertDialog
+import androidx.lifecycle.lifecycleScope
+import com.example.sitacardent.R
+import com.example.sitacardent.network.MemberRepository
 import com.google.android.material.textfield.TextInputEditText
+import kotlinx.coroutines.launch
 import java.nio.charset.Charset
 
 class NfcScanActivity : AppCompatActivity() {
@@ -60,6 +67,64 @@ class NfcScanActivity : AppCompatActivity() {
         btnCancelScanning.visibility = View.GONE
         tvInstruction.text = "No card detected\nPlease try again"
         tvInstruction.setTextColor(android.graphics.Color.RED)
+    }
+
+    // REPOSITORY & STATE
+    private val repository = MemberRepository()
+    private var verifiedMemberId: Long? = null
+    private var verifiedCompanyName: String? = null
+
+    private fun verifyMemberApi(id: String, company: String) {
+        tvInstruction.text = "Verifying Member..."
+        tvInstruction.setTextColor(android.graphics.Color.GRAY)
+        
+        lifecycleScope.launch {
+            val result = repository.verifyMember(id, company)
+            result.onSuccess { response ->
+                Log.d(TAG, "API Verify Success: $response")
+                verifiedMemberId = response.memberId
+                verifiedCompanyName = response.companyName
+                
+                displayMemberInfo(MemberData(
+                    id = response.memberId.toString(),
+                    companyName = response.companyName,
+                    validUpto = response.validity
+                ))
+                Toast.makeText(this@NfcScanActivity, "Balance: ${response.currentTotal}", Toast.LENGTH_SHORT).show()
+                
+            }.onFailure { e ->
+                Log.e(TAG, "API Verify Failed: ${e.message}")
+                tvInstruction.text = "Verification Failed: ${e.message}"
+                tvInstruction.setTextColor(android.graphics.Color.RED)
+                isScanning = false
+            }
+        }
+    }
+
+    private fun addAmountApi(amount: Double) {
+        val memId = verifiedMemberId
+        if (memId == null) {
+             Toast.makeText(this, "Please verify member first", Toast.LENGTH_SHORT).show()
+             return
+        }
+
+        tvInstruction.text = "Processing Transaction..."
+        tvInstruction.visibility = View.VISIBLE
+        
+        lifecycleScope.launch {
+            val result = repository.addAmount(memId.toString(), amount)
+            result.onSuccess { response ->
+                Log.d(TAG, "API Add Amount Success: $response")
+                resetUI()
+                tvInstruction.text = "Success! New Balance: ${response.newTotal}"
+                tvInstruction.setTextColor(android.graphics.Color.GREEN)
+                Toast.makeText(this@NfcScanActivity, "Added ${response.addedAmount}. New Total: ${response.newTotal}", Toast.LENGTH_LONG).show()
+            }.onFailure { e ->
+                Log.e(TAG, "API Add Amount Failed: ${e.message}")
+                tvInstruction.text = "Transaction Failed: ${e.message}"
+                tvInstruction.setTextColor(android.graphics.Color.RED)
+            }
+        }
     }
 
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -124,21 +189,53 @@ class NfcScanActivity : AppCompatActivity() {
             }
         }
 
+        // DEBUG: Long press to manually enter member data for API testing
+        cardLogo.setOnLongClickListener {
+            showManualEntryDialog()
+            true
+        }
+
         btnConfirm.setOnClickListener {
-            val amount = etInvoiceAmount.text.toString()
-            if (amount.isNotEmpty()) {
-                pendingAmountToWrite = amount
-                enableForegroundDispatch()
-                tvInstruction.visibility = View.VISIBLE
-                tvInstruction.text = "READY TO SAVE: \$$amount\nTap card to finalize"
-                btnCancelScanning.visibility = View.VISIBLE
-                Log.d(TAG, "Confirm clicked. Pending write: $amount. Scanner re-enabled.")
+            val amountStr = etInvoiceAmount.text.toString()
+            val amount = amountStr.toDoubleOrNull()
+            if (amount != null && amount > 0) {
+                // Call API instead of writing to card
+                addAmountApi(amount)
             } else {
-                etInvoiceAmount.error = "Enter amount first"
+                etInvoiceAmount.error = "Enter valid amount"
             }
         }
         btnCancel.setOnClickListener { resetUI() }
         btnCancelScanning.setOnClickListener { resetUI() }
+    }
+
+    // NEW: Manual Entry Dialog for Testing
+    private fun showManualEntryDialog() {
+        // Construct layout programmatically
+        val inputId = TextInputEditText(this).apply { hint = "Member ID (e.g. 12345)" }
+        val inputCompany = TextInputEditText(this).apply { hint = "Company Name (e.g. Tech Corp)" }
+        
+        val layout = android.widget.LinearLayout(this).apply {
+            orientation = android.widget.LinearLayout.VERTICAL
+            setPadding(50, 40, 50, 40)
+            addView(inputId)
+            addView(inputCompany)
+        }
+
+        AlertDialog.Builder(this)
+            .setTitle("Manual API Test")
+            .setView(layout)
+            .setPositiveButton("Verify") { _, _ ->
+                val id = inputId.text.toString()
+                val company = inputCompany.text.toString()
+                if (id.isNotEmpty() && company.isNotEmpty()) {
+                    verifyMemberApi(id, company)
+                } else {
+                    Toast.makeText(this, "Fields cannot be empty", Toast.LENGTH_SHORT).show()
+                }
+            }
+            .setNegativeButton("Cancel", null)
+            .show()
     }
 
     // NEW: Helper to authenticate with multiple keys
@@ -181,7 +278,8 @@ class NfcScanActivity : AppCompatActivity() {
                     Log.d(TAG, "Executing requested read...")
                     val memberData = readMifareClassicData(it)
                     if (memberData != null) {
-                        displayMemberInfo(memberData)
+                        // verify via API
+                        verifyMemberApi(memberData.id, memberData.companyName)
                     } else {
                         tvInstruction.text = "Card detected but couldn't read member data."
                     }

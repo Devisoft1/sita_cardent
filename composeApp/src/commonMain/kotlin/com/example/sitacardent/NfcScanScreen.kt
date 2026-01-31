@@ -12,6 +12,8 @@ import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import com.example.sitacardent.network.MemberRepository
+import kotlinx.coroutines.launch
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
@@ -39,10 +41,23 @@ fun NfcScanScreen(
     onBackClick: () -> Unit
 ) {
     var invoiceAmount by remember { mutableStateOf("") }
-    // Sample data for testing - matching Android preview (set to null to hide Member Verified card)
-    var memberId by remember { mutableStateOf<String?>("12345") }
-    var companyName by remember { mutableStateOf<String?>("Devisoft") }
-    var validUpto by remember { mutableStateOf<String?>("31/12/2026") }
+    
+    // API State
+    val scope = rememberCoroutineScope()
+    val repository = remember { MemberRepository() }
+    var isLoading by remember { mutableStateOf(false) }
+    var apiError by remember { mutableStateOf<String?>(null) }
+    var successMessage by remember { mutableStateOf<String?>(null) }
+    
+    // Member Data
+    var memberIdInput by remember { mutableStateOf("") }
+    var companyNameInput by remember { mutableStateOf("") }
+    
+    var verifiedMemberId by remember { mutableStateOf<Long?>(null) }
+    var verifiedCompanyName by remember { mutableStateOf<String?>(null) }
+    var memberValidity by remember { mutableStateOf<String?>(null) }
+    var memberCurrentTotal by remember { mutableStateOf<Double?>(null) }
+    
     var isScanning by remember { mutableStateOf(false) }
     var isTimeout by remember { mutableStateOf(false) }
 
@@ -59,7 +74,63 @@ fun NfcScanScreen(
     }
 
     val displayName = userEmail.substringBefore("@")
-    val showMemberInfo = memberId != null
+    val showMemberInfo = verifiedMemberId != null
+
+    fun verifyMember() {
+        if (memberIdInput.isBlank() || companyNameInput.isBlank()) {
+            apiError = "Please enter Member ID and Company Name"
+            return
+        }
+        
+        isLoading = true
+        apiError = null
+        successMessage = null
+        
+        scope.launch {
+            val result = repository.verifyMember(memberIdInput, companyNameInput)
+            result.onSuccess { response ->
+                verifiedMemberId = response.memberId
+                verifiedCompanyName = response.companyName
+                memberValidity = response.validity
+                memberCurrentTotal = response.currentTotal
+                isLoading = false
+            }.onFailure { e ->
+                apiError = "Verification Failed: ${e.message}"
+                verifiedMemberId = null
+                isLoading = false
+            }
+        }
+    }
+
+    fun addAmount() {
+        if (verifiedMemberId == null) {
+            apiError = "Please verify member first"
+            return
+        }
+        
+        val amount = invoiceAmount.toDoubleOrNull()
+        if (amount == null || amount <= 0) {
+            apiError = "Please enter a valid amount"
+            return
+        }
+
+        isLoading = true
+        apiError = null
+        successMessage = null
+
+        scope.launch {
+            val result = repository.addAmount(verifiedMemberId.toString(), amount)
+            result.onSuccess { response ->
+                successMessage = "Success! New Total: ${response.newTotal}"
+                memberCurrentTotal = response.newTotal
+                invoiceAmount = ""
+                isLoading = false
+            }.onFailure { e ->
+                apiError = "Transaction Failed: ${e.message}"
+                isLoading = false
+            }
+        }
+    }
 
     Box(
         modifier = Modifier
@@ -158,8 +229,7 @@ fun NfcScanScreen(
                         .size(180.dp)
                         .zIndex(10f)
                         .clickable { 
-                            isScanning = true 
-                            isTimeout = false
+                            isScanning = !isScanning // Toggle scanning for demo
                         }
                 ) {
                     Image(
@@ -173,14 +243,15 @@ fun NfcScanScreen(
             }
 
             /* ============ INSTRUCTION TEXT ============ */
-
-            // Spacer to account for logo overlap
             
             Text(
                 text = when {
+                    isLoading -> "Processing..."
+                    successMessage != null -> "Transaction Successful"
+                    apiError != null -> apiError ?: "Error"
                     isTimeout -> "No card detected\nPlease try again"
                     isScanning -> "Searching for card...\nHold it near the back"
-                    else -> "Ready to Scan\nTap the logo and bring card close"
+                    else -> "Ready to Verify\nEnter details below"
                 },
                 modifier = Modifier
                     .fillMaxWidth()
@@ -188,20 +259,52 @@ fun NfcScanScreen(
                 textAlign = TextAlign.Center,
                 fontSize = 13.sp,
                 lineHeight = 18.sp,
-                color = if (isTimeout) Color.Red else TextSecondary
+                color = when {
+                    apiError != null || isTimeout -> Color.Red
+                    successMessage != null -> StatusGreen
+                    else -> TextSecondary
+                }
             )
 
-            if (isScanning) {
-                TextButton(
-                    onClick = { isScanning = false },
-                    modifier = Modifier.align(Alignment.CenterHorizontally)
-                ) {
-                    Text(
-                        text = "Cancel Scanning",
-                        color = Color.Red.copy(alpha = 0.7f),
-                        fontSize = 12.sp,
-                        fontWeight = FontWeight.Medium
+            /* ================= INPUTS CARD ================= */
+            
+            Card(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(horizontal = 12.dp, vertical = 8.dp),
+                shape = RoundedCornerShape(6.dp),
+                elevation = CardDefaults.cardElevation(3.dp),
+                colors = CardDefaults.cardColors(Color.White)
+            ) {
+                Column(Modifier.padding(16.dp)) {
+                    OutlinedTextField(
+                        value = memberIdInput,
+                        onValueChange = { memberIdInput = it },
+                        label = { Text("Member ID") },
+                        modifier = Modifier.fillMaxWidth(),
+                        singleLine = true
                     )
+                    
+                    Spacer(Modifier.height(8.dp))
+                    
+                    OutlinedTextField(
+                        value = companyNameInput,
+                        onValueChange = { companyNameInput = it },
+                        label = { Text("Company Name") },
+                        modifier = Modifier.fillMaxWidth(),
+                        singleLine = true
+                    )
+                    
+                    Spacer(Modifier.height(16.dp))
+                    
+                    Button(
+                        onClick = { verifyMember() },
+                        modifier = Modifier.fillMaxWidth(),
+                        colors = ButtonDefaults.buttonColors(containerColor = SitaBlue),
+                        enabled = !isLoading
+                    ) {
+                        Text("Verify Member")
+                    }
                 }
             }
 
@@ -211,7 +314,7 @@ fun NfcScanScreen(
                 Card(
                     modifier = Modifier
                         .fillMaxWidth()
-                        .padding(start = 12.dp, end = 12.dp, top = 2.dp),
+                        .padding(horizontal = 12.dp, vertical = 8.dp),
                     shape = RoundedCornerShape(6.dp),
                     elevation = CardDefaults.cardElevation(3.dp),
                     border = BorderStroke(1.dp, DividerColor),
@@ -243,115 +346,117 @@ fun NfcScanScreen(
                             color = DividerColor
                         )
 
-                        MemberInfoRow("Member ID", memberId ?: "--")
+                        MemberInfoRow("Member ID", verifiedMemberId.toString())
                         Spacer(Modifier.height(4.dp))
-                        MemberInfoRow("Company Name", companyName ?: "--")
+                        MemberInfoRow("Company Name", verifiedCompanyName ?: "--")
                         Spacer(Modifier.height(4.dp))
-                        MemberInfoRow("Expiry Date", validUpto ?: "--")
+                        MemberInfoRow("Expiry Date", memberValidity ?: "--")
+                        Spacer(Modifier.height(4.dp))
+                        MemberInfoRow("Current Balance", memberCurrentTotal.toString())
                     }
                 }
             }
 
             /* ================= TRANSACTION CARD ================= */
 
-            Card(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(
-                        start = 12.dp,
-                        end = 12.dp,
-                        top = 12.dp,
-                        bottom = 32.dp
-                    ),
-                shape = RoundedCornerShape(6.dp),
-                elevation = CardDefaults.cardElevation(3.dp),
-                colors = CardDefaults.cardColors(Color.White)
-            ) {
-                Column(Modifier.padding(10.dp)) {
-
-                    Text(
-                        text = "Invoice Amount",
-                        color = SitaBlue,
-                        fontSize = 13.sp,
-                        fontWeight = FontWeight.Bold
-                    )
-
-                    Spacer(Modifier.height(10.dp))
-
-                    OutlinedTextField(
-                        value = invoiceAmount,
-                        onValueChange = { invoiceAmount = it },
-                        label = { Text("Enter Amount") },
-                        leadingIcon = {
-                            Text(
-                                text = "Rs.",
-                                fontSize = 14.sp,
-                                fontWeight = FontWeight.Bold,
-                                color = SitaBlue
-                            )
-                        },
-                        singleLine = true,
-                        modifier = Modifier
-                            .fillMaxWidth(),
-                        textStyle = TextStyle(
-                            fontSize = 14.sp,
-                            fontWeight = FontWeight.Bold
+            if (showMemberInfo) {
+                Card(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(
+                            start = 12.dp,
+                            end = 12.dp,
+                            top = 12.dp,
+                            bottom = 32.dp
                         ),
-                        shape = RoundedCornerShape(6.dp),
-                        colors = OutlinedTextFieldDefaults.colors(
-                            focusedBorderColor = SitaBlue,
-                            unfocusedBorderColor = SitaBlue,
-                            focusedLabelColor = SitaBlue,
-                            unfocusedLabelColor = SitaBlue
+                    shape = RoundedCornerShape(6.dp),
+                    elevation = CardDefaults.cardElevation(3.dp),
+                    colors = CardDefaults.cardColors(Color.White)
+                ) {
+                    Column(Modifier.padding(10.dp)) {
+
+                        Text(
+                            text = "Add Amount",
+                            color = SitaBlue,
+                            fontSize = 13.sp,
+                            fontWeight = FontWeight.Bold
                         )
-                    )
 
-                    Spacer(Modifier.height(20.dp))
+                        Spacer(Modifier.height(10.dp))
 
-                    Row(
-                        modifier = Modifier.fillMaxWidth(),
-                        horizontalArrangement = Arrangement.spacedBy(8.dp)
-                    ) {
-
-                        TextButton(
-                            onClick = {
-                                invoiceAmount = ""
-                                memberId = null
-                                companyName = null
-                                validUpto = null
-                                isScanning = false
+                        OutlinedTextField(
+                            value = invoiceAmount,
+                            onValueChange = { invoiceAmount = it },
+                            label = { Text("Enter Amount") },
+                            leadingIcon = {
+                                Text(
+                                    text = "Rs.",
+                                    fontSize = 14.sp,
+                                    fontWeight = FontWeight.Bold,
+                                    color = SitaBlue
+                                )
                             },
+                            singleLine = true,
                             modifier = Modifier
-                                .weight(1f)
-                                .height(48.dp),
-                            contentPadding = PaddingValues(8.dp)
-                        ) {
-                            Text(
-                                text = "Reset",
-                                fontSize = 12.sp,
-                                color = TextSecondary
-                            )
-                        }
-
-                        Button(
-                            onClick = { 
-                                isScanning = true 
-                                isTimeout = false
-                            },
-                            modifier = Modifier
-                                .weight(1.5f)
-                                .height(48.dp),
-                            shape = RoundedCornerShape(6.dp),
-                            elevation = ButtonDefaults.buttonElevation(4.dp),
-                            colors = ButtonDefaults.buttonColors(
-                                containerColor = SitaBlue
-                            )
-                        ) {
-                            Text(
-                                text = "Confirm",
-                                fontSize = 12.sp,
+                                .fillMaxWidth(),
+                            textStyle = TextStyle(
+                                fontSize = 14.sp,
                                 fontWeight = FontWeight.Bold
+                            ),
+                            shape = RoundedCornerShape(6.dp),
+                            colors = OutlinedTextFieldDefaults.colors(
+                                focusedBorderColor = SitaBlue,
+                                unfocusedBorderColor = SitaBlue,
+                                focusedLabelColor = SitaBlue,
+                                unfocusedLabelColor = SitaBlue
                             )
+                        )
+
+                        Spacer(Modifier.height(20.dp))
+
+                        Row(
+                            modifier = Modifier.fillMaxWidth(),
+                            horizontalArrangement = Arrangement.spacedBy(8.dp)
+                        ) {
+
+                            TextButton(
+                                onClick = {
+                                    invoiceAmount = ""
+                                    // Resetting verified status logic if needed
+                                    verifiedMemberId = null
+                                    successMessage = null
+                                    apiError = null
+                                },
+                                modifier = Modifier
+                                    .weight(1f)
+                                    .height(48.dp),
+                                contentPadding = PaddingValues(8.dp)
+                            ) {
+                                Text(
+                                    text = "Reset",
+                                    fontSize = 12.sp,
+                                    color = TextSecondary
+                                )
+                            }
+
+                            Button(
+                                onClick = { addAmount() },
+                                modifier = Modifier
+                                    .weight(1.5f)
+                                    .height(48.dp),
+                                shape = RoundedCornerShape(6.dp),
+                                elevation = ButtonDefaults.buttonElevation(4.dp),
+                                colors = ButtonDefaults.buttonColors(
+                                    containerColor = SitaBlue
+                                ),
+                                enabled = !isLoading
+                            ) {
+                                Text(
+                                    text = "Confirm",
+                                    fontSize = 12.sp,
+                                    fontWeight = FontWeight.Bold
+                                )
+                            }
                         }
                     }
                 }
