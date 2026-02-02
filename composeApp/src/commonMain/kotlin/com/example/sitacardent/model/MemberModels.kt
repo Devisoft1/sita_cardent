@@ -19,13 +19,15 @@ data class VerifyMemberResponse(
 @Serializable
 data class AddAmountRequest(
     val memberId: String,
-    val amount: Double
+    val amount: Double,
+    val card_mfid: String
 )
 
 @Serializable
 data class AddAmountResponse(
     val message: String,
-    val memberId: Long,
-    val addedAmount: Double,
-    val newTotal: Double
+    val memberId: Long? = null,
+    val addedAmount: Double? = null,
+    val newCardTotal: Double? = null,
+    val newGlobalTotal: Double? = null
 )

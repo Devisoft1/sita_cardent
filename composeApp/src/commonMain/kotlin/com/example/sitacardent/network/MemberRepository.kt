@@ -33,15 +33,21 @@ class MemberRepository {
         }
     }
 
-    suspend fun addAmount(memberId: String, amount: Double): Result<AddAmountResponse> {
-        println("MemberRepository: Adding Amount - ID: $memberId, Amount: $amount")
+    suspend fun addAmount(memberId: String, amount: Double, cardMfid: String): Result<AddAmountResponse> {
+        println("MemberRepository: Adding Amount - ID: $memberId, Amount: $amount, Card MFID: $cardMfid")
         return try {
             val response: AddAmountResponse = client.post("$baseUrl/add-amount") {
                 contentType(ContentType.Application.Json)
-                setBody(AddAmountRequest(memberId, amount))
+                setBody(AddAmountRequest(memberId, amount, cardMfid))
             }.body()
-            println("MemberRepository: Add Amount Success - $response")
-            Result.success(response)
+            println("MemberRepository: Response received: $response")
+            if (response.memberId != null) {
+                println("MemberRepository: Add Amount Success - $response")
+                Result.success(response)
+            } else {
+                println("MemberRepository: Add Amount Failed (Server Message) - ${response.message}")
+                Result.failure(Exception(response.message))
+            }
         } catch (e: Exception) {
             println("MemberRepository: Add Amount Failed - ${e.message}")
             Result.failure(e)

@@ -35,10 +35,22 @@ private val TextSecondary = Color(0xFF757575)
 private val StatusGreen = Color(0xFF4CAF50)
 private val DividerColor = Color(0xFFEEEEEE)
 
+data class ScannedCardData(
+    val memberId: String,
+    val companyName: String,
+    val cardMfid: String
+)
+
+@OptIn(ExperimentalFoundationApi::class)
 @Composable
 fun NfcScanScreen(
     userEmail: String,
-    onBackClick: () -> Unit
+    onBackClick: () -> Unit,
+    isExternalScanning: Boolean? = null,
+    onExternalScanRequest: (() -> Unit)? = null,
+    externalScannedData: ScannedCardData? = null,
+    onExternalDataConsumed: () -> Unit = {},
+    onLogoLongClick: (() -> Unit)? = null
 ) {
     var invoiceAmount by remember { mutableStateOf("") }
     
@@ -50,15 +62,18 @@ fun NfcScanScreen(
     var successMessage by remember { mutableStateOf<String?>(null) }
     
     // Member Data
-    var memberIdInput by remember { mutableStateOf("") }
-    var companyNameInput by remember { mutableStateOf("") }
+
     
     var verifiedMemberId by remember { mutableStateOf<Long?>(null) }
     var verifiedCompanyName by remember { mutableStateOf<String?>(null) }
+    var verifiedCardMfid by remember { mutableStateOf<String?>(null) }
     var memberValidity by remember { mutableStateOf<String?>(null) }
     var memberCurrentTotal by remember { mutableStateOf<Double?>(null) }
     
-    var isScanning by remember { mutableStateOf(false) }
+    // Use external scanning state if provided, otherwise local
+    var isScanningInternal by remember { mutableStateOf(false) }
+    val isScanning = isExternalScanning ?: isScanningInternal
+    
     var isTimeout by remember { mutableStateOf(false) }
 
     // Timeout logic: Stop scanning after 1 minute
@@ -66,18 +81,27 @@ fun NfcScanScreen(
         if (isScanning) {
             isTimeout = false
             delay(60_000L) // 1 minute
+            // Reset appropriate state
             if (isScanning) {
-                isScanning = false
+                if (isExternalScanning == null) {
+                    isScanningInternal = false
+                }
                 isTimeout = true
             }
         }
     }
 
+
+
     val displayName = userEmail.substringBefore("@")
     val showMemberInfo = verifiedMemberId != null
 
-    fun verifyMember() {
-        if (memberIdInput.isBlank() || companyNameInput.isBlank()) {
+    fun verifyMember(
+        idToVerify: String,
+        companyToVerify: String,
+        cardMfid: String
+    ) {
+        if (idToVerify.isBlank() || companyToVerify.isBlank()) {
             apiError = "Please enter Member ID and Company Name"
             return
         }
@@ -87,18 +111,30 @@ fun NfcScanScreen(
         successMessage = null
         
         scope.launch {
-            val result = repository.verifyMember(memberIdInput, companyNameInput)
+            val result = repository.verifyMember(idToVerify, companyToVerify)
             result.onSuccess { response ->
                 verifiedMemberId = response.memberId
                 verifiedCompanyName = response.companyName
+                verifiedCardMfid = cardMfid
                 memberValidity = response.validity
+                println("DEBUG: API Response Validity: ${response.validity}")
                 memberCurrentTotal = response.currentTotal
                 isLoading = false
             }.onFailure { e ->
                 apiError = "Verification Failed: ${e.message}"
                 verifiedMemberId = null
+                verifiedCardMfid = null
                 isLoading = false
             }
+        }
+    }
+
+    // Handle externally scanned data
+    LaunchedEffect(externalScannedData) {
+        externalScannedData?.let { data ->
+            // Pass data directly to ensure immediate verification
+            verifyMember(data.memberId, data.companyName, data.cardMfid)
+            onExternalDataConsumed()
         }
     }
 
@@ -119,10 +155,10 @@ fun NfcScanScreen(
         successMessage = null
 
         scope.launch {
-            val result = repository.addAmount(verifiedMemberId.toString(), amount)
+            val result = repository.addAmount(verifiedMemberId.toString(), amount, verifiedCardMfid ?: "")
             result.onSuccess { response ->
-                successMessage = "Success! New Total: ${response.newTotal}"
-                memberCurrentTotal = response.newTotal
+                successMessage = "Success! New Total: ${response.newCardTotal}"
+                memberCurrentTotal = response.newCardTotal
                 invoiceAmount = ""
                 isLoading = false
             }.onFailure { e ->
@@ -228,9 +264,18 @@ fun NfcScanScreen(
                         .padding(top = 160.dp)
                         .size(180.dp)
                         .zIndex(10f)
-                        .clickable { 
-                            isScanning = !isScanning // Toggle scanning for demo
-                        }
+                        .combinedClickable(
+                            onClick = {
+                                if (onExternalScanRequest != null) {
+                                    onExternalScanRequest()
+                                } else {
+                                    isScanningInternal = !isScanningInternal // Toggle scanning for demo
+                                }
+                            },
+                            onLongClick = {
+                                onLogoLongClick?.invoke()
+                            }
+                        )
                 ) {
                     Image(
                         painter = painterResource(Res.drawable.sita_logo),
@@ -251,7 +296,7 @@ fun NfcScanScreen(
                     apiError != null -> apiError ?: "Error"
                     isTimeout -> "No card detected\nPlease try again"
                     isScanning -> "Searching for card...\nHold it near the back"
-                    else -> "Ready to Verify\nEnter details below"
+                    else -> "Ready to Verify\nTap logo to scan"
                 },
                 modifier = Modifier
                     .fillMaxWidth()
@@ -266,47 +311,7 @@ fun NfcScanScreen(
                 }
             )
 
-            /* ================= INPUTS CARD ================= */
-            
-            Card(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(horizontal = 12.dp, vertical = 8.dp),
-                shape = RoundedCornerShape(6.dp),
-                elevation = CardDefaults.cardElevation(3.dp),
-                colors = CardDefaults.cardColors(Color.White)
-            ) {
-                Column(Modifier.padding(16.dp)) {
-                    OutlinedTextField(
-                        value = memberIdInput,
-                        onValueChange = { memberIdInput = it },
-                        label = { Text("Member ID") },
-                        modifier = Modifier.fillMaxWidth(),
-                        singleLine = true
-                    )
-                    
-                    Spacer(Modifier.height(8.dp))
-                    
-                    OutlinedTextField(
-                        value = companyNameInput,
-                        onValueChange = { companyNameInput = it },
-                        label = { Text("Company Name") },
-                        modifier = Modifier.fillMaxWidth(),
-                        singleLine = true
-                    )
-                    
-                    Spacer(Modifier.height(16.dp))
-                    
-                    Button(
-                        onClick = { verifyMember() },
-                        modifier = Modifier.fillMaxWidth(),
-                        colors = ButtonDefaults.buttonColors(containerColor = SitaBlue),
-                        enabled = !isLoading
-                    ) {
-                        Text("Verify Member")
-                    }
-                }
-            }
+
 
             /* ================= MEMBER DETAILS CARD ================= */
 
@@ -350,7 +355,7 @@ fun NfcScanScreen(
                         Spacer(Modifier.height(4.dp))
                         MemberInfoRow("Company Name", verifiedCompanyName ?: "--")
                         Spacer(Modifier.height(4.dp))
-                        MemberInfoRow("Expiry Date", memberValidity ?: "--")
+                        MemberInfoRow("Expiry Date", formatDate(memberValidity ?: "--"))
                         Spacer(Modifier.height(4.dp))
                         MemberInfoRow("Current Balance", memberCurrentTotal.toString())
                     }
@@ -482,5 +487,21 @@ fun MemberInfoRow(label: String, value: String) {
             fontWeight = FontWeight.Bold,
             color = Color.Black
         )
+    }
+}
+
+fun formatDate(dateString: String): String {
+    println("DEBUG: formatDate input: '$dateString'")
+    if (dateString == "--" || dateString.isBlank()) return dateString
+    return try {
+        // As api returns YYYY-MM-DD
+        val parts = dateString.split("-")
+        if (parts.size == 3) {
+            "${parts[2]}/${parts[1]}/${parts[0]}"
+        } else {
+            dateString
+        }
+    } catch (e: Exception) {
+        dateString
     }
 }
