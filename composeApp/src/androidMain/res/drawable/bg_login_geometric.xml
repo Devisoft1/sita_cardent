@@ -1,0 +1,38 @@
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:aapt="http://schemas.android.com/aapt"
+    android:width="360dp"
+    android:height="640dp"
+    android:viewportWidth="360"
+    android:viewportHeight="640">
+
+    <!-- Light Base Gradient -->
+    <path android:pathData="M0,0L360,0L360,640L0,640Z">
+        <aapt:attr name="android:fillColor">
+            <gradient
+                android:startX="0" android:startY="0"
+                android:endX="360" android:endY="640"
+                android:type="linear">
+                <item android:offset="0" android:color="#FFFFFF"/>
+                <item android:offset="1" android:color="@color/devisoft_blue_pale"/>
+            </gradient>
+        </aapt:attr>
+    </path>
+
+    <!-- Top Left Abstract Shape (Blue Tint) -->
+    <path
+        android:pathData="M0,0 L280,0 C200,80 180,240 0,280 Z"
+        android:fillColor="@color/devisoft_blue_pale"/>
+
+    <!-- Top Right Accent Circle (Orange, Transparent) -->
+    <path
+        android:pathData="M360,0 L360,180 C300,160 280,60 360,0 Z"
+        android:fillAlpha="0.15"
+        android:fillColor="@color/devisoft_orange"/>
+
+    <!-- Bottom Wave overlay (Pale Blue, Matching Top) -->
+    <path
+        android:pathData="M0,640 L360,640 L360,500 C260,580 140,480 0,560 Z"
+        android:fillColor="@color/devisoft_blue_soft"/>
+
+
+</vector>

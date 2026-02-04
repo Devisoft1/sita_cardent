@@ -5,30 +5,16 @@
     android:layout_width="match_parent"
     android:layout_height="match_parent"
     android:fillViewport="true"
-    android:background="@color/bg_light"
-    tools:context=".MainActivity">
+    android:background="@drawable/bg_login_geometric"
+    tools:context=".activity.MainActivity">
 
     <androidx.constraintlayout.widget.ConstraintLayout
         android:layout_width="match_parent"
         android:layout_height="wrap_content">
 
-        <!-- Header Background -->
-        <View
-            android:id="@+id/headerView"
-            android:layout_width="match_parent"
-            android:layout_height="@dimen/_260sdp"
-            app:layout_constraintTop_toTopOf="parent" />
 
-        <ImageView
-            android:id="@+id/ivLogo"
-            android:layout_width="@dimen/_160sdp"
-            android:layout_height="@dimen/_160sdp"
-            android:src="@drawable/sita_logo"
-            app:layout_constraintEnd_toEndOf="parent"
-            app:layout_constraintStart_toStartOf="parent"
-            app:layout_constraintTop_toTopOf="parent"
-            app:layout_constraintBottom_toTopOf="@+id/cardLogin"
-            app:layout_constraintVertical_chainStyle="packed" />
+
+        <!-- Logo -->
 
 
         <!-- Login Card -->
@@ -36,19 +22,29 @@
             android:id="@+id/cardLogin"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:layout_marginHorizontal="@dimen/_12sdp"
-            android:layout_marginTop="@dimen/_16sdp"
+            android:layout_marginHorizontal="@dimen/_20sdp"
+            android:layout_marginTop="@dimen/_80sdp"
             android:layout_marginBottom="@dimen/_32sdp"
             app:cardCornerRadius="@dimen/_8sdp"
-            app:cardElevation="@dimen/_12sdp"
-            app:layout_constraintTop_toBottomOf="@+id/ivLogo"
+            app:cardElevation="@dimen/_8sdp"
+            app:cardBackgroundColor="@color/white"
+            app:layout_constraintTop_toTopOf="parent"
             app:layout_constraintBottom_toBottomOf="parent">
 
             <LinearLayout
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
                 android:orientation="vertical"
-                android:padding="@dimen/_12sdp">
+                android:paddingHorizontal="@dimen/_20sdp"
+                android:paddingVertical="@dimen/_24sdp">
+
+                <ImageView
+                    android:id="@+id/ivLogo"
+                    android:layout_width="@dimen/_140sdp"
+                    android:layout_height="@dimen/_80sdp"
+                    android:src="@drawable/devisoft_logo"
+                    android:layout_gravity="center_horizontal"
+                    android:layout_marginBottom="@dimen/_16sdp" />
 
                 <com.google.android.material.textfield.TextInputLayout
                     android:id="@+id/tilEmail"
@@ -57,7 +53,9 @@
                     android:layout_height="wrap_content"
                     android:hint="Email Address"
                     app:startIconDrawable="@drawable/ic_email"
-                    app:startIconTint="@color/sita_blue"
+                    app:startIconTint="@color/devisoft_orange"
+                    app:boxStrokeColor="@color/devisoft_blue"
+                    app:hintTextColor="@color/devisoft_blue"
                     app:boxCornerRadiusBottomEnd="@dimen/_8sdp"
                     app:boxCornerRadiusBottomStart="@dimen/_8sdp"
                     app:boxCornerRadiusTopEnd="@dimen/_8sdp"
@@ -68,8 +66,8 @@
                         android:layout_width="match_parent"
                         android:layout_height="wrap_content"
                         android:inputType="textEmailAddress"
-                        android:paddingVertical="@dimen/_8sdp"
-                        android:textSize="@dimen/_14ssp" />
+                        android:paddingVertical="@dimen/_10sdp"
+                        android:textSize="@dimen/_13ssp" />
 
                 </com.google.android.material.textfield.TextInputLayout>
 
@@ -81,8 +79,10 @@
                     android:layout_marginTop="@dimen/_16sdp"
                     android:hint="Password"
                     app:startIconDrawable="@drawable/ic_lock"
-                    app:startIconTint="@color/sita_blue"
+                    app:startIconTint="@color/devisoft_orange"
                     app:endIconMode="password_toggle"
+                    app:boxStrokeColor="@color/devisoft_blue"
+                    app:hintTextColor="@color/devisoft_blue"
                     app:boxCornerRadiusBottomEnd="@dimen/_8sdp"
                     app:boxCornerRadiusBottomStart="@dimen/_8sdp"
                     app:boxCornerRadiusTopEnd="@dimen/_8sdp"
@@ -93,51 +93,63 @@
                         android:layout_width="match_parent"
                         android:layout_height="wrap_content"
                         android:inputType="textPassword"
-                        android:paddingVertical="@dimen/_8sdp"
-                        android:textSize="@dimen/_14ssp" />
+                        android:paddingVertical="@dimen/_10sdp"
+                        android:textSize="@dimen/_13ssp" />
 
                 </com.google.android.material.textfield.TextInputLayout>
 
-                <CheckBox
-                    android:id="@+id/cbRememberMe"
-                    android:layout_width="wrap_content"
+                <LinearLayout
+                    android:layout_width="match_parent"
                     android:layout_height="wrap_content"
-                    android:layout_marginTop="@dimen/_12sdp"
-                    android:text="Remember Me"
-                    android:textColor="@color/text_secondary"
-                    android:textSize="@dimen/_12ssp"
-                    android:buttonTint="@color/sita_blue" />
+                    android:orientation="horizontal"
+                    android:gravity="center_vertical"
+                    android:layout_marginTop="@dimen/_8sdp">
 
-                <TextView
-                    android:id="@+id/tvForgotPassword"
-                    android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"
-                    android:layout_gravity="end"
-                    android:layout_marginTop="@dimen/_8sdp"
-                    android:text="Forgot Password?"
-                    android:textColor="@color/sita_blue"
-                    android:textSize="@dimen/_12ssp"
-                    android:textStyle="bold" />
+                    <CheckBox
+                        android:id="@+id/cbRememberMe"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:text="Remember Me"
+                        android:textColor="@color/text_secondary"
+                        android:textSize="@dimen/_11ssp"
+                        android:buttonTint="@color/devisoft_orange" />
+
+                    <View
+                        android:layout_width="0dp"
+                        android:layout_height="0dp"
+                        android:layout_weight="1" />
+
+                    <TextView
+                        android:id="@+id/tvForgotPassword"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:text="Forgot Password?"
+                        android:textColor="@color/devisoft_blue"
+                        android:textSize="@dimen/_11ssp"
+                        android:textStyle="bold" />
+
+                </LinearLayout>
 
                 <com.google.android.material.button.MaterialButton
                     android:id="@+id/btnLogin"
                     android:layout_width="match_parent"
-                    android:layout_height="@dimen/_40sdp"
-                    android:layout_margin="@dimen/_12sdp"
-                    android:text="Login"
-                    android:textAllCaps="false"
-                    android:textSize="@dimen/_16ssp"
+                    android:layout_height="@dimen/_42sdp"
+                    android:layout_marginTop="@dimen/_24sdp"
+                    android:text="LOGIN"
+                    android:letterSpacing="0.1"
+                    android:textAllCaps="true"
+                    android:textSize="@dimen/_14ssp"
                     android:textStyle="bold"
                     android:background="@drawable/button_gradient_rounded"
                     app:backgroundTint="@null"
-                    app:cornerRadius="@dimen/_8sdp"
-                    app:elevation="@dimen/_4sdp" />
+                    app:cornerRadius="@dimen/_10sdp"
+                    app:elevation="@dimen/_6sdp" />
 
                 <LinearLayout
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
                     android:layout_gravity="center"
-                    android:layout_marginTop="@dimen/_24sdp"
+                    android:layout_marginTop="@dimen/_20sdp"
                     android:orientation="horizontal">
 
                     <TextView
@@ -145,15 +157,15 @@
                         android:layout_height="wrap_content"
                         android:text="Don't have an account? "
                         android:textColor="@color/text_secondary"
-                        android:textSize="@dimen/_13ssp" />
+                        android:textSize="@dimen/_12ssp" />
 
                     <TextView
                         android:id="@+id/tvRegister"
                         android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
                         android:text="Register"
-                        android:textColor="@color/sita_blue"
-                        android:textSize="@dimen/_13ssp"
+                        android:textColor="@color/devisoft_blue"
+                        android:textSize="@dimen/_12ssp"
                         android:textStyle="bold" />
 
                 </LinearLayout>

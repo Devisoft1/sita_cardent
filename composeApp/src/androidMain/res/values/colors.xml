@@ -21,4 +21,12 @@
     <color name="white_20">#33FFFFFF</color>
     <color name="sita_blue_header_dark">#16174D</color>
     <color name="divider_color">#EEEEEE</color>
+
+    <!-- DeviSoft Brand Colors -->
+    <color name="devisoft_blue">#00509E</color>
+    <color name="devisoft_blue_dark">#003870</color>
+    <color name="devisoft_orange">#F58220</color>
+    <color name="devisoft_orange_dark">#D86C14</color>
+    <color name="devisoft_blue_pale">#F2F7FD</color>
+    <color name="devisoft_blue_soft">#E1EBFB</color>
 </resources>
