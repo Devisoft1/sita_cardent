@@ -1,4 +1,4 @@
-rootProject.name = "SITACardent"
+rootProject.name = "DeviSoft"
 enableFeaturePreview("TYPESAFE_PROJECT_ACCESSORS")
 
 pluginManagement {

@@ -52,9 +52,9 @@ import androidx.compose.ui.zIndex
 import com.example.sitacardent.network.AuthRepository
 import kotlinx.coroutines.launch
 import org.jetbrains.compose.resources.painterResource
-import sitacardent.composeapp.generated.resources.Res
-import sitacardent.composeapp.generated.resources.sita_logo
-import sitacardent.composeapp.generated.resources.devisoft_logo
+import devisoft.composeapp.generated.resources.Res
+import devisoft.composeapp.generated.resources.sita_logo
+import devisoft.composeapp.generated.resources.devisoft_logo
 
 // Color definitions matching Android colors.xml
 private val SitaBlue = Color(0xFF2E3091)
