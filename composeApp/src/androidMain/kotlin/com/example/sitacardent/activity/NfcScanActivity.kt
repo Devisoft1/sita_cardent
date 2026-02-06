@@ -15,6 +15,7 @@ import androidx.activity.enableEdgeToEdge
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.setValue
+import com.example.sitacardent.LocalStorage
 import com.example.sitacardent.NfcScanScreen
 import com.example.sitacardent.ScannedCardData
 import java.nio.charset.Charset
@@ -55,6 +56,7 @@ class NfcScanActivity : ComponentActivity() {
                 userEmail = userEmail,
                 onBackClick = { 
                    // Navigate back to Login (MainActivity)
+                   LocalStorage.clearAuth() // Fix: Clear session so MainActivity doesn't auto-login
                    val intent = Intent(this, MainActivity::class.java)
                    intent.flags = Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TASK
                    startActivity(intent)

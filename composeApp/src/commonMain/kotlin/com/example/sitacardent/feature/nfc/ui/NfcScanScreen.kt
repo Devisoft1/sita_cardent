@@ -96,6 +96,17 @@ fun NfcScanScreen(
     val displayName = userEmail.substringBefore("@")
     val showMemberInfo = verifiedMemberId != null
 
+    fun resetState() {
+        apiError = null
+        successMessage = null
+        verifiedMemberId = null
+        verifiedCompanyName = null
+        verifiedCardMfid = null
+        memberValidity = null
+        memberCurrentTotal = null
+        invoiceAmount = ""
+    }
+
     fun verifyMember(
         idToVerify: String,
         companyToVerify: String,
@@ -161,6 +172,11 @@ fun NfcScanScreen(
                 memberCurrentTotal = response.newCardTotal
                 invoiceAmount = ""
                 isLoading = false
+         
+                // Wait for 2 seconds then reset the screen
+                delay(2000)
+                resetState() 
+                
             }.onFailure { e ->
                 apiError = "Transaction Failed: ${e.message}"
                 isLoading = false
@@ -267,14 +283,7 @@ fun NfcScanScreen(
                         .combinedClickable(
                             onClick = {
                                 if (apiError != null || successMessage != null) {
-                                    apiError = null
-                                    successMessage = null
-                                    verifiedMemberId = null
-                                    verifiedCompanyName = null
-                                    verifiedCardMfid = null
-                                    memberValidity = null
-                                    memberCurrentTotal = null
-                                    invoiceAmount = ""
+                                    resetState()
                                 } else if (onExternalScanRequest != null) {
                                     onExternalScanRequest()
                                 } else {
@@ -323,14 +332,7 @@ fun NfcScanScreen(
             if (apiError != null) {
                 Button(
                     onClick = {
-                        apiError = null
-                        successMessage = null
-                        verifiedMemberId = null
-                        verifiedCompanyName = null
-                        verifiedCardMfid = null
-                        memberValidity = null
-                        memberCurrentTotal = null
-                        invoiceAmount = ""
+                        resetState()
                     },
                     modifier = Modifier
                         .align(Alignment.CenterHorizontally)
@@ -456,15 +458,7 @@ fun NfcScanScreen(
 
                             TextButton(
                                 onClick = {
-                                    invoiceAmount = ""
-                                    // Resetting verified status logic if needed
-                                    verifiedMemberId = null
-                                    verifiedCompanyName = null
-                                    verifiedCardMfid = null
-                                    memberValidity = null
-                                    memberCurrentTotal = null
-                                    successMessage = null
-                                    apiError = null
+                                    resetState()
                                 },
                                 modifier = Modifier
                                     .weight(1f)
