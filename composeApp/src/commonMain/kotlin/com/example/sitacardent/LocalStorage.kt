@@ -7,9 +7,8 @@ package com.example.sitacardent
  * - Android: SharedPreferences
  */
 expect object LocalStorage {
-    fun getUser(): Pair<String, String>?
-    fun saveUser(email: String, pass: String)
-    fun clearUser()
-    fun isLoggedIn(): Boolean
-    fun setLoggedIn(loggedIn: Boolean)
+    fun saveAuth(token: String, name: String, email: String, shopId: Int)
+    fun getAuthToken(): String?
+    fun getUserInfo(): Triple<String, String, Int>? // Name, Email, ShopId
+    fun clearAuth()
 }

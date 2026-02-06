@@ -12,8 +12,8 @@ import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
-import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
@@ -25,11 +25,9 @@ import androidx.compose.material.icons.filled.Visibility
 import androidx.compose.material.icons.filled.VisibilityOff
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
-import androidx.compose.material3.Checkbox
-import androidx.compose.material3.CheckboxDefaults
+import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
-import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.OutlinedTextFieldDefaults
 import androidx.compose.material3.Surface
@@ -38,6 +36,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -49,11 +48,13 @@ import androidx.compose.ui.text.input.PasswordVisualTransformation
 import androidx.compose.ui.text.input.VisualTransformation
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.compose.ui.zIndex
+import com.example.sitacardent.network.AuthRepository
+import kotlinx.coroutines.launch
 import org.jetbrains.compose.resources.painterResource
 import sitacardent.composeapp.generated.resources.Res
 import sitacardent.composeapp.generated.resources.sita_logo
-
-import androidx.compose.ui.zIndex
+import sitacardent.composeapp.generated.resources.devisoft_logo
 
 // Color definitions matching Android colors.xml
 private val SitaBlue = Color(0xFF2E3091)
@@ -65,233 +66,261 @@ private val TextSecondary = Color(0xFF757575)
 
 @Composable
 fun LoginScreen(onLoginSuccess: (String) -> Unit) {
-    val savedUser = remember { LocalStorage.getUser() }
-    var email by remember { mutableStateOf(savedUser?.first ?: "") }
-    var password by remember { mutableStateOf(savedUser?.second ?: "") }
+    // Only pre-fill email if we have it, don't fill password anymore
+    val savedUser = remember { LocalStorage.getUserInfo() }
+    var email by remember { mutableStateOf(savedUser?.second ?: "") }
+    var password by remember { mutableStateOf("") }
     var errorMessage by remember { mutableStateOf<String?>(null) }
-    var rememberMe by remember { mutableStateOf(savedUser != null) }
+    var isLoading by remember { mutableStateOf(false) }
     var passwordVisible by remember { mutableStateOf(false) }
+    var rememberMe by remember { mutableStateOf(false) } // Default false to match typical flow, or true? XML logic loaded from prefs.
+    
+    val scope = rememberCoroutineScope()
+    val authRepository = remember { AuthRepository() }
+
+    // Colors from XML/colors.xml
+    val DevisoftBlue = Color(0xFF00509E)
+    val DevisoftBlueDark = Color(0xFF003870)
+    val DevisoftOrange = Color(0xFFF58220)
+    val TextSecondary = Color(0xFF757575)
+    val BgGeometric = Color(0xFFF8F9FA) // Fallback for drawable/bg_login_geometric if we don't have the image
 
     Box(
         modifier = Modifier
             .fillMaxSize()
-            .background(BgLight)
+            .background(BgGeometric), // Using color as we might not have the geometric drawable resource in common
+        contentAlignment = Alignment.Center
     ) {
-        Box(
-            modifier = Modifier.fillMaxSize(),
-            contentAlignment = Alignment.Center
+        Column(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(horizontal = 24.dp) // approx 20sdp
+                .verticalScroll(rememberScrollState()),
+            horizontalAlignment = Alignment.CenterHorizontally,
+            verticalArrangement = Arrangement.Center
         ) {
-            Column(
+            
+            // Login Card (MaterialCardView)
+            Surface(
                 modifier = Modifier
                     .fillMaxWidth()
-                    .verticalScroll(rememberScrollState()),
-                horizontalAlignment = Alignment.CenterHorizontally,
-                verticalArrangement = Arrangement.Center
+                    .padding(top = 96.dp, bottom = 40.dp), // approx 80sdp, 32sdp
+                shape = RoundedCornerShape(10.dp), // approx 8sdp
+                shadowElevation = 10.dp,
+                color = Color.White
             ) {
-                // Logo
-                Image(
-                    painter = painterResource(Res.drawable.sita_logo),
-                    contentDescription = "SITA Logo",
-                    modifier = Modifier
-                        .size(200.dp)
-                        .zIndex(1f),
-                    contentScale = ContentScale.Fit
-                )
-
-                // Login Card
-                Surface(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .padding(
-                            horizontal = 16.dp,
-                            vertical = 32.dp
-                        ), // Reduced from 32.dp to 16.dp
-                    shape = RoundedCornerShape(12.dp), // Approx 8sdp
-                    shadowElevation = 12.dp,
-                    color = Color.White
+                Column(
+                    modifier = Modifier.padding(horizontal = 24.dp, vertical = 32.dp), // 20sdp, 24sdp
                 ) {
-                    Column(
-                        modifier = Modifier.padding(16.dp), // Reduced from 24.dp to 16.dp
-                        horizontalAlignment = Alignment.CenterHorizontally
+                    
+                    // Logo (ImageView id: ivLogo)
+                    Box(
+                        modifier = Modifier.fillMaxWidth(),
+                        contentAlignment = Alignment.Center
                     ) {
-                        Spacer(modifier = Modifier.height(16.dp))
-
-                        // Email Input
-                        OutlinedTextField(
-                            value = email,
-                            onValueChange = { email = it },
-                            label = { Text("Email Address") },
-                            leadingIcon = {
-                                Icon(
-                                    imageVector = Icons.Filled.Email,
-                                    contentDescription = "Email Icon",
-                                    tint = SitaBlue
-                                )
-                            },
-                            colors = OutlinedTextFieldDefaults.colors(
-                                focusedContainerColor = Color.Transparent,
-                                unfocusedContainerColor = Color.Transparent,
-                                focusedBorderColor = SitaBlue,
-                                unfocusedBorderColor = TextSecondary,
-                                focusedLabelColor = SitaBlue,
-                                cursorColor = SitaBlue
-                            ),
+                         Image(
+                            painter = painterResource(Res.drawable.devisoft_logo),
+                            contentDescription = "Devisoft Logo",
                             modifier = Modifier
-                                .fillMaxWidth(),
-                            singleLine = true,
-                            shape = RoundedCornerShape(8.dp)
+                                .width(180.dp) // approx 140sdp
+                                .height(100.dp) // approx 80sdp
+                                .padding(bottom = 20.dp), // 16sdp
+                            contentScale = ContentScale.Fit
                         )
+                    }
 
-                        Spacer(modifier = Modifier.height(20.dp))
+                    // Email Input (TextInputLayout)
+                    OutlinedTextField(
+                        value = email,
+                        onValueChange = { email = it },
+                        label = { Text("Email Address") },
+                        leadingIcon = {
+                            Icon(
+                                imageVector = Icons.Filled.Email,
+                                contentDescription = "Email Icon",
+                                tint = DevisoftOrange // app:startIconTint="@color/devisoft_orange"
+                            )
+                        },
+                        colors = OutlinedTextFieldDefaults.colors(
+                            focusedContainerColor = Color.Transparent,
+                            unfocusedContainerColor = Color.Transparent,
+                            focusedBorderColor = DevisoftBlue, // app:boxStrokeColor
+                            unfocusedBorderColor = DevisoftBlue,
+                            focusedLabelColor = DevisoftBlue, // app:hintTextColor
+                            unfocusedLabelColor = TextSecondary,
+                            cursorColor = DevisoftBlue
+                        ),
+                        modifier = Modifier
+                            .fillMaxWidth(),
+                        singleLine = true,
+                        shape = RoundedCornerShape(10.dp)
+                    )
 
-                        // Password Input
-                        OutlinedTextField(
-                            value = password,
-                            onValueChange = { password = it },
-                            label = { Text("Password") },
-                            leadingIcon = {
-                                Icon(
-                                    imageVector = Icons.Filled.Lock,
-                                    contentDescription = "Lock Icon",
-                                    tint = SitaBlue
-                                )
-                            },
-                            trailingIcon = {
-                                val image = if (passwordVisible)
-                                    Icons.Filled.Visibility
-                                else
-                                    Icons.Filled.VisibilityOff
+                    Spacer(modifier = Modifier.height(20.dp)) // 16sdp gap
 
-                                val description =
-                                    if (passwordVisible) "Hide password" else "Show password"
+                    // Password Input (TextInputLayout)
+                    OutlinedTextField(
+                        value = password,
+                        onValueChange = { password = it },
+                        label = { Text("Password") },
+                        leadingIcon = {
+                            Icon(
+                                imageVector = Icons.Filled.Lock,
+                                contentDescription = "Lock Icon",
+                                tint = DevisoftOrange // app:startIconTint="@color/devisoft_orange"
+                            )
+                        },
+                        trailingIcon = {
+                            val image = if (passwordVisible)
+                                Icons.Filled.Visibility
+                            else
+                                Icons.Filled.VisibilityOff
 
-                                IconButton(onClick = { passwordVisible = !passwordVisible }) {
-                                    Icon(imageVector = image, description)
-                                }
-                            },
-                            visualTransformation = if (passwordVisible) VisualTransformation.None else PasswordVisualTransformation(),
-                            colors = OutlinedTextFieldDefaults.colors(
-                                focusedContainerColor = Color.Transparent,
-                                unfocusedContainerColor = Color.Transparent,
-                                focusedBorderColor = SitaBlue,
-                                unfocusedBorderColor = TextSecondary,
-                                focusedLabelColor = SitaBlue,
-                                cursorColor = SitaBlue
-                            ),
-                            modifier = Modifier
-                                .fillMaxWidth(),
-                            singleLine = true,
-                            shape = RoundedCornerShape(8.dp)
+                            IconButton(onClick = { passwordVisible = !passwordVisible }) {
+                                Icon(imageVector = image, contentDescription = null, tint = TextSecondary)
+                            }
+                        },
+                        visualTransformation = if (passwordVisible) VisualTransformation.None else PasswordVisualTransformation(),
+                        colors = OutlinedTextFieldDefaults.colors(
+                            focusedContainerColor = Color.Transparent,
+                            unfocusedContainerColor = Color.Transparent,
+                            focusedBorderColor = DevisoftBlue,
+                            unfocusedBorderColor = DevisoftBlue,
+                            focusedLabelColor = DevisoftBlue,
+                            unfocusedLabelColor = TextSecondary,
+                            cursorColor = DevisoftBlue
+                        ),
+                        modifier = Modifier
+                            .fillMaxWidth(),
+                        singleLine = true,
+                        shape = RoundedCornerShape(10.dp)
+                    )
+                    
+                    if (errorMessage != null) {
+                        Spacer(modifier = Modifier.height(8.dp))
+                        Text(
+                            text = errorMessage!!,
+                            color = Color.Red,
+                            fontSize = 12.sp
                         )
+                    }
 
-                        // Remember Me Checkbox
-                        Row(
-                            modifier = Modifier
-                                .fillMaxWidth()
-                                .padding(top = 12.dp),
-                            verticalAlignment = Alignment.CenterVertically
-                        ) {
-                            Checkbox(
-                                checked = rememberMe,
-                                onCheckedChange = { rememberMe = it },
-                                colors = CheckboxDefaults.colors(checkedColor = SitaBlue)
+                    Spacer(modifier = Modifier.height(10.dp))
+
+                    // Remember Me & Forgot Password
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        androidx.compose.material3.Checkbox(
+                            checked = rememberMe,
+                            onCheckedChange = { rememberMe = it },
+                            colors = androidx.compose.material3.CheckboxDefaults.colors(
+                                checkedColor = DevisoftOrange,
+                                uncheckedColor = TextSecondary
                             )
-                            Text(
-                                text = "Remember Me",
-                                color = TextSecondary,
-                                fontSize = 14.sp
-                            )
-                        }
+                        )
+                        Text(
+                            text = "Remember Me",
+                            color = TextSecondary,
+                            fontSize = 14.sp
+                        )
+                        
+                        Spacer(Modifier.weight(1f))
+                        
+                        Text(
+                            text = "Forgot Password?",
+                            color = DevisoftBlue,
+                            fontSize = 14.sp,
+                            fontWeight = FontWeight.Bold,
+                            modifier = Modifier.clickable { /* TODO */ }
+                        )
+                    }
 
-                        // Forgot Password
-                        Box(
-                            modifier = Modifier.fillMaxWidth(),
-                            contentAlignment = Alignment.CenterEnd
-                        ) {
-                            Text(
-                                text = "Forgot Password?",
-                                color = SitaBlue,
-                                fontWeight = FontWeight.Bold,
-                                fontSize = 14.sp,
-                                modifier = Modifier
-                                    .padding(top = 8.dp)
-                                    .clickable { /* TODO: Handle Forgot Password */ }
-                            )
-                        }
+                    Spacer(modifier = Modifier.height(30.dp)) // 24sdp
 
-                        Spacer(modifier = Modifier.height(32.dp))
-
-                        if (errorMessage != null) {
-                            Text(
-                                text = errorMessage!!,
-                                color = Color.Red,
-                                modifier = Modifier.padding(bottom = 16.dp)
-                            )
-                        }
-
-                        // Login Button with Gradient
-                        Button(
-                            onClick = {
-                                if (email == "g3goddodroad@gmail.com" && password == "dnpp@4488") {
-                                    if (rememberMe) {
-                                        LocalStorage.saveUser(email, password)
-                                    } else {
-                                        LocalStorage.clearUser()
+                    // Login Button (MaterialButton)
+                    Button(
+                        onClick = {
+                            if (email.isNotBlank() && password.isNotBlank()) {
+                                println("LoginDebug: Login Button Clicked")
+                                isLoading = true
+                                errorMessage = null
+                                
+                                scope.launch {
+                                    val result = authRepository.login(email, password)
+                                    result.onSuccess { response ->
+                                        // Save auth regardless for now, or respect 'rememberMe'?
+                                        // The original XML logic implies saving credentials only if checked.
+                                        // But our new Auth logic depends on Token. 
+                                        // Implementing: Always save token for session, but maybe 'rememberMe' could implication long-term persistence? 
+                                        // For now, we behave like modern apps: Always login. 
+                                        LocalStorage.saveAuth(response.token, response.name, response.email, response.shopId)
+                                        isLoading = false
+                                        onLoginSuccess(response.email)
+                                    }.onFailure { error ->
+                                        errorMessage = error.message ?: "Login failed"
+                                        isLoading = false
                                     }
-                                    LocalStorage.setLoggedIn(true)
-                                    onLoginSuccess(email)
-                                } else {
-                                    errorMessage = "Invalid Credentials"
                                 }
-                            },
+                            } else {
+                                errorMessage = "Please enter email and password"
+                            }
+                        },
+                        enabled = !isLoading,
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .height(56.dp), // 42sdp approx
+                        contentPadding = PaddingValues(0.dp),
+                        shape = RoundedCornerShape(12.dp), // 10sdp
+                        colors = ButtonDefaults.buttonColors(containerColor = Color.Transparent)
+                    ) {
+                        Box(
                             modifier = Modifier
-                                .fillMaxWidth()
-                                .height(50.dp),
-                            contentPadding = PaddingValues(0.dp),
-                            shape = RoundedCornerShape(8.dp),
-                            colors = ButtonDefaults.buttonColors(containerColor = Color.Transparent)
+                                .fillMaxSize()
+                                .background(
+                                    brush = Brush.linearGradient(
+                                        colors = listOf(DevisoftBlue, DevisoftBlueDark) // Gradient
+                                    )
+                                ),
+                            contentAlignment = Alignment.Center
                         ) {
-                            Box(
-                                modifier = Modifier
-                                    .fillMaxSize()
-                                    .background(
-                                        brush = Brush.linearGradient(
-                                            colors = listOf(SitaBlue, SitaBlueDark)
-                                        )
-                                    ),
-                                contentAlignment = Alignment.Center
-                            ) {
+                            if (isLoading) {
+                                CircularProgressIndicator(color = Color.White, modifier = Modifier.size(24.dp))
+                            } else {
                                 Text(
-                                    text = "Login",
+                                    text = "LOGIN",
                                     color = Color.White,
-                                    fontSize = 18.sp,
-                                    fontWeight = FontWeight.Bold
+                                    fontSize = 18.sp, // 14ssp
+                                    fontWeight = FontWeight.Bold,
+                                    letterSpacing = 1.sp // 0.1 letterSpacing
                                 )
                             }
                         }
+                    }
+                    
+                     Spacer(modifier = Modifier.height(24.dp)) // 20sdp
 
-                        Spacer(modifier = Modifier.height(32.dp))
-
-                        // Register Link
-                        Row(
-                            verticalAlignment = Alignment.CenterVertically
-                        ) {
-                            Text(
-                                text = "Don't have an account? ",
-                                color = TextSecondary,
-                                fontSize = 15.sp
-                            )
-                            Text(
-                                text = "Register",
-                                color = SitaBlue,
-                                fontWeight = FontWeight.Bold,
-                                fontSize = 15.sp,
-                                modifier = Modifier.clickable { /* TODO: Handle Register */ }
-                            )
-                        }
+                    // Register Link
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.Center,
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        Text(
+                            text = "Don't have an account? ",
+                            color = TextSecondary,
+                            fontSize = 15.sp // 12ssp
+                        )
+                        Text(
+                            text = "Register",
+                            color = DevisoftBlue,
+                            fontWeight = FontWeight.Bold,
+                            fontSize = 15.sp, // 12ssp
+                            modifier = Modifier.clickable { /* TODO: Handle Register */ }
+                        )
                     }
                 }
-                Spacer(modifier = Modifier.height(32.dp))
             }
         }
     }

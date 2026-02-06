@@ -11,6 +11,7 @@ import io.ktor.client.request.setBody
 import io.ktor.client.statement.bodyAsText
 import io.ktor.http.ContentType
 import io.ktor.http.contentType
+import kotlinx.serialization.json.JsonObject
 
 class MemberRepository {
     private val client: HttpClient = createHttpClient()
@@ -19,14 +20,32 @@ class MemberRepository {
     suspend fun verifyMember(memberId: String, companyName: String): Result<VerifyMemberResponse> {
         println("MemberRepository: Verifying Member - ID: $memberId, Company: $companyName")
         return try {
-            val responseText = client.post("$baseUrl/verify") {
+            val response = client.post("$baseUrl/verify") {
                 contentType(ContentType.Application.Json)
                 setBody(VerifyMemberRequest(memberId, companyName))
-            }.bodyAsText()
-            println("MemberRepository: Raw Response: $responseText")
-            val response = createJson().decodeFromString<VerifyMemberResponse>(responseText)
-            println("MemberRepository: Verify Success - $response")
-            Result.success(response)
+            }
+            
+            if (response.status.value in 200..299) {
+                val responseBody = response.body<VerifyMemberResponse>()
+                println("MemberRepository: Verify Success - $responseBody")
+                Result.success(responseBody)
+            } else {
+                val errorBody = response.bodyAsText()
+                println("MemberRepository: Verify Failed (Status: ${response.status}) - $errorBody")
+                
+                // Try to parse "message" from error response
+                val errorMessage = try {
+                    val jsonObject = createJson().decodeFromString<JsonObject>(errorBody)
+                    // Remove quotes if present from the string representation
+                    jsonObject["message"]?.toString()?.trim('"') 
+                        ?: "Server error: ${response.status.description}"
+                } catch (e: Exception) {
+                    println("Json Parse Error: ${e.message}")
+                    "Error: ${response.status.description}"
+                }
+                
+                Result.failure(Exception(errorMessage))
+            }
         } catch (e: Exception) {
             println("MemberRepository: Verify Failed - ${e.message}")
             Result.failure(e)

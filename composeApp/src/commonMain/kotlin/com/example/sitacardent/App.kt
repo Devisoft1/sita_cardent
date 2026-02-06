@@ -8,7 +8,7 @@ fun App() {
     MaterialTheme {
         // Check for active session immediately on startup
         var isSessionActive by remember { 
-            mutableStateOf(LocalStorage.isLoggedIn()) 
+            mutableStateOf(LocalStorage.getAuthToken() != null) 
         }
 
         if (!isSessionActive) {
@@ -18,12 +18,12 @@ fun App() {
                 }
             )
         } else {
-            val user = LocalStorage.getUser()
+            val user = LocalStorage.getUserInfo()
             NfcScanScreen(
-                userEmail = user?.first ?: "User",
+                userEmail = user?.first ?: "User", // user.first is name in Triple<Name, Email, ShopId>
                 onBackClick = {
-                    // Treat back as logout: clear session but keep credentials
-                    LocalStorage.setLoggedIn(false)
+                    // Treat back as logout: clear session
+                    LocalStorage.clearAuth()
                     isSessionActive = false
                 }
             )

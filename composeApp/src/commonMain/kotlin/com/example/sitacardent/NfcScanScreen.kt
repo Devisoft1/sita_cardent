@@ -266,7 +266,16 @@ fun NfcScanScreen(
                         .zIndex(10f)
                         .combinedClickable(
                             onClick = {
-                                if (onExternalScanRequest != null) {
+                                if (apiError != null || successMessage != null) {
+                                    apiError = null
+                                    successMessage = null
+                                    verifiedMemberId = null
+                                    verifiedCompanyName = null
+                                    verifiedCardMfid = null
+                                    memberValidity = null
+                                    memberCurrentTotal = null
+                                    invoiceAmount = ""
+                                } else if (onExternalScanRequest != null) {
                                     onExternalScanRequest()
                                 } else {
                                     isScanningInternal = !isScanningInternal // Toggle scanning for demo
@@ -310,6 +319,27 @@ fun NfcScanScreen(
                     else -> TextSecondary
                 }
             )
+
+            if (apiError != null) {
+                Button(
+                    onClick = {
+                        apiError = null
+                        successMessage = null
+                        verifiedMemberId = null
+                        verifiedCompanyName = null
+                        verifiedCardMfid = null
+                        memberValidity = null
+                        memberCurrentTotal = null
+                        invoiceAmount = ""
+                    },
+                    modifier = Modifier
+                        .align(Alignment.CenterHorizontally)
+                        .padding(top = 8.dp),
+                    colors = ButtonDefaults.buttonColors(containerColor = Color.Red)
+                ) {
+                    Text("Cancel", color = Color.White)
+                }
+            }
 
 
 
@@ -429,6 +459,10 @@ fun NfcScanScreen(
                                     invoiceAmount = ""
                                     // Resetting verified status logic if needed
                                     verifiedMemberId = null
+                                    verifiedCompanyName = null
+                                    verifiedCardMfid = null
+                                    memberValidity = null
+                                    memberCurrentTotal = null
                                     successMessage = null
                                     apiError = null
                                 },
@@ -438,9 +472,9 @@ fun NfcScanScreen(
                                 contentPadding = PaddingValues(8.dp)
                             ) {
                                 Text(
-                                    text = "Reset",
+                                    text = "Cancel",
                                     fontSize = 12.sp,
-                                    color = TextSecondary
+                                    color = Color.Red
                                 )
                             }
 

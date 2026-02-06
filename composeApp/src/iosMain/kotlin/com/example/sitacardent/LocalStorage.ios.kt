@@ -3,43 +3,43 @@ package com.example.sitacardent
 import platform.Foundation.NSUserDefaults
 
 actual object LocalStorage {
+    private const val KEY_TOKEN = "com.example.sitacardent.auth_token"
+    private const val KEY_NAME = "com.example.sitacardent.user_name"
     private const val KEY_EMAIL = "com.example.sitacardent.user_email"
-    private const val KEY_PASS = "com.example.sitacardent.user_password"
-    private const val KEY_LOGGED_IN = "com.example.sitacardent.is_logged_in"
+    private const val KEY_SHOP_ID = "com.example.sitacardent.shop_id"
 
-    actual fun getUser(): Pair<String, String>? {
+    actual fun saveAuth(token: String, name: String, email: String, shopId: Int) {
         val userDefaults = NSUserDefaults.standardUserDefaults
-        val email = userDefaults.stringForKey(KEY_EMAIL)
-        val pass = userDefaults.stringForKey(KEY_PASS)
-        
-        return if (email != null && email.isNotEmpty() && pass != null && pass.isNotEmpty()) {
-            Pair(email, pass)
-        } else {
-            null
-        }
-    }
-
-    actual fun saveUser(email: String, pass: String) {
-        val userDefaults = NSUserDefaults.standardUserDefaults
+        userDefaults.setObject(token, forKey = KEY_TOKEN)
+        userDefaults.setObject(name, forKey = KEY_NAME)
         userDefaults.setObject(email, forKey = KEY_EMAIL)
-        userDefaults.setObject(pass, forKey = KEY_PASS)
+        userDefaults.setInteger(shopId.toLong(), forKey = KEY_SHOP_ID)
         userDefaults.synchronize()
     }
 
-    actual fun clearUser() {
+    actual fun getAuthToken(): String? {
+        return NSUserDefaults.standardUserDefaults.stringForKey(KEY_TOKEN)
+    }
+
+    actual fun getUserInfo(): Triple<String, String, Int>? {
         val userDefaults = NSUserDefaults.standardUserDefaults
+        val name = userDefaults.stringForKey(KEY_NAME)
+        val email = userDefaults.stringForKey(KEY_EMAIL)
+        val shopId = userDefaults.integerForKey(KEY_SHOP_ID).toInt()
+        
+        // NSUserDefaults integerForKey returns 0 if not found, checking if we have token implies auth
+        if (name != null && email != null) {
+            return Triple(name, email, shopId)
+        }
+        return null
+    }
+
+    actual fun clearAuth() {
+        val userDefaults = NSUserDefaults.standardUserDefaults
+        userDefaults.removeObjectForKey(KEY_TOKEN)
+        userDefaults.removeObjectForKey(KEY_NAME)
         userDefaults.removeObjectForKey(KEY_EMAIL)
-        userDefaults.removeObjectForKey(KEY_PASS)
-        userDefaults.synchronize()
-    }
-
-    actual fun isLoggedIn(): Boolean {
-        return NSUserDefaults.standardUserDefaults.boolForKey(KEY_LOGGED_IN)
-    }
-
-    actual fun setLoggedIn(loggedIn: Boolean) {
-        val userDefaults = NSUserDefaults.standardUserDefaults
-        userDefaults.setBool(loggedIn, forKey = KEY_LOGGED_IN)
+        userDefaults.removeObjectForKey(KEY_SHOP_ID)
         userDefaults.synchronize()
     }
 }
