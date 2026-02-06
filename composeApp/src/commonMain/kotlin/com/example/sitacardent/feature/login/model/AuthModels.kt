@@ -9,6 +9,11 @@ data class LoginRequest(
 )
 
 @Serializable
+data class ForgotPasswordRequest(
+    val email: String
+)
+
+@Serializable
 data class LoginResponse(
     val _id: String,
     val shopId: Int,

@@ -74,6 +74,7 @@ fun LoginScreen(onLoginSuccess: (String) -> Unit) {
     var isLoading by remember { mutableStateOf(false) }
     var passwordVisible by remember { mutableStateOf(false) }
     var rememberMe by remember { mutableStateOf(false) } // Default false to match typical flow, or true? XML logic loaded from prefs.
+    var showForgotPasswordDialog by remember { mutableStateOf(false) }
     
     val scope = rememberCoroutineScope()
     val authRepository = remember { AuthRepository() }
@@ -233,7 +234,34 @@ fun LoginScreen(onLoginSuccess: (String) -> Unit) {
                             color = DevisoftBlue,
                             fontSize = 14.sp,
                             fontWeight = FontWeight.Bold,
-                            modifier = Modifier.clickable { /* TODO */ }
+                            modifier = Modifier.clickable { showForgotPasswordDialog = true }
+                        )
+                    }
+
+                    if (showForgotPasswordDialog) {
+                        ForgotPasswordDialog(
+                            onDismiss = { showForgotPasswordDialog = false },
+                            onSubmit = { emailForReset ->
+                                // Trigger API
+                                scope.launch {
+                                    isLoading = true
+                                    showForgotPasswordDialog = false // Dismiss dialog immediately or wait? better safely dismiss.
+                                    val result = authRepository.forgotPassword(emailForReset)
+                                    isLoading = false
+                                    
+                                    result.onSuccess { msg ->
+                                        // Show success (using errorMessage var for now as a general message area, or create a success state?)
+                                        // Ideally we want a snackbar or separate success message. 
+                                        // Re-using errorMessage but maybe prefixing "Success:" to style it green? 
+                                        // Or just using a simple dialog for success?
+                                        // For simplicity, let's just use errorMessage field but we know it's a bit hacky. 
+                                        // BETTER: Add a successMessage state.
+                                        errorMessage = "Success: $msg" 
+                                    }.onFailure { e ->
+                                        errorMessage = e.message ?: "Failed to send reset email"
+                                    }
+                                }
+                            }
                         )
                     }
 
@@ -324,4 +352,62 @@ fun LoginScreen(onLoginSuccess: (String) -> Unit) {
             }
         }
     }
+}
+
+@Composable
+fun ForgotPasswordDialog(
+    onDismiss: () -> Unit,
+    onSubmit: (String) -> Unit
+) {
+    var email by remember { mutableStateOf("") }
+    var isSubmitting by remember { mutableStateOf(false) }
+    var error by remember { mutableStateOf<String?>(null) } // Local error for validation
+
+    androidx.compose.material3.AlertDialog(
+        onDismissRequest = onDismiss,
+        title = { Text(text = "Forgot Password") },
+        text = {
+            Column {
+                Text("Enter your email address to receive a password reset link.")
+                Spacer(modifier = Modifier.height(16.dp))
+                OutlinedTextField(
+                    value = email,
+                    onValueChange = { 
+                        email = it
+                        error = null 
+                    },
+                    label = { Text("Email") },
+                    singleLine = true,
+                    isError = error != null,
+                    modifier = Modifier.fillMaxWidth()
+                )
+                if (error != null) {
+                    Text(
+                        text = error!!,
+                        color = androidx.compose.material3.MaterialTheme.colorScheme.error,
+                        style = androidx.compose.material3.MaterialTheme.typography.bodySmall,
+                        modifier = Modifier.padding(start = 16.dp, top = 4.dp)
+                    )
+                }
+            }
+        },
+        confirmButton = {
+            androidx.compose.material3.TextButton(
+                onClick = {
+                    if (email.isBlank()) {
+                        error = "Email cannot be empty"
+                    } else {
+                        onSubmit(email)
+                    }
+                }
+            ) {
+                Text("Send Reset Link")
+            }
+        },
+        dismissButton = {
+            androidx.compose.material3.TextButton(onClick = onDismiss) {
+                Text("Cancel")
+            }
+        }
+    )
 }
