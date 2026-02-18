@@ -283,7 +283,21 @@ fun LoginScreen(onLoginSuccess: (String) -> Unit) {
                                         // But our new Auth logic depends on Token. 
                                         // Implementing: Always save token for session, but maybe 'rememberMe' could implication long-term persistence? 
                                         // For now, we behave like modern apps: Always login. 
-                                        LocalStorage.saveAuth(response.token, response.name, response.email, response.shopId)
+                                        // Save auth with logo URL
+                                        val logoUrl = response.image?.let { imagePath ->
+                                            if (imagePath.startsWith("http")) {
+                                                imagePath
+                                            } else {
+                                                "https://apisita.shanti-pos.com$imagePath"
+                                            }
+                                        }
+                                        LocalStorage.saveAuth(
+                                            token = response.token,
+                                            name = response.name,
+                                            email = response.email,
+                                            shopId = response.shopId,
+                                            logoUrl = logoUrl
+                                        )
                                         isLoading = false
                                         onLoginSuccess(response.email)
                                     }.onFailure { error ->

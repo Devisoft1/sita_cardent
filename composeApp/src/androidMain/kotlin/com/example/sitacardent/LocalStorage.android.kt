@@ -9,6 +9,7 @@ actual object LocalStorage {
     private const val KEY_NAME = "user_name"
     private const val KEY_EMAIL = "user_email"
     private const val KEY_SHOP_ID = "shop_id"
+    private const val KEY_LOGO_URL = "logo_url"
 
     @Volatile
     private var prefs: SharedPreferences? = null
@@ -21,14 +22,15 @@ actual object LocalStorage {
         prefs = context.applicationContext.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
     }
 
-    actual fun saveAuth(token: String, name: String, email: String, shopId: Int) {
-        println("LoginDebug: LocalStorage (Android) - Saving Auth Data. Name: $name, Email: $email")
+    actual fun saveAuth(token: String, name: String, email: String, shopId: Int, logoUrl: String?) {
+        println("LoginDebug: LocalStorage (Android) - Saving Auth Data. Name: $name, Email: $email, LogoUrl: $logoUrl")
         val p = prefs ?: return
         p.edit()
             .putString(KEY_TOKEN, token)
             .putString(KEY_NAME, name)
             .putString(KEY_EMAIL, email)
             .putInt(KEY_SHOP_ID, shopId)
+            .putString(KEY_LOGO_URL, logoUrl)
             .apply()
         println("LoginDebug: LocalStorage (Android) - Data Saved Successfully")
     }
@@ -54,6 +56,12 @@ actual object LocalStorage {
         }
     }
 
+    actual fun getLogoUrl(): String? {
+        val logoUrl = prefs?.getString(KEY_LOGO_URL, null)
+        println("LoginDebug: LocalStorage (Android) - getLogoUrl called. Found: ${logoUrl != null}")
+        return logoUrl
+    }
+
     actual fun clearAuth() {
         println("LoginDebug: LocalStorage (Android) - Clearing Auth Data")
         val p = prefs ?: return
@@ -62,6 +70,7 @@ actual object LocalStorage {
             .remove(KEY_NAME)
             .remove(KEY_EMAIL)
             .remove(KEY_SHOP_ID)
+            .remove(KEY_LOGO_URL)
             .apply()
         println("LoginDebug: LocalStorage (Android) - Auth Data Cleared")
     }

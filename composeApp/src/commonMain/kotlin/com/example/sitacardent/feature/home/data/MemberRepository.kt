@@ -17,12 +17,12 @@ class MemberRepository {
     private val client: HttpClient = createHttpClient()
     private val baseUrl = "https://apisita.shanti-pos.com/api/members"
 
-    suspend fun verifyMember(memberId: String, companyName: String): Result<VerifyMemberResponse> {
-        println("MemberRepository: Verifying Member - ID: $memberId, Company: $companyName")
+    suspend fun verifyMember(memberId: String, companyName: String, password: String): Result<VerifyMemberResponse> {
+        println("MemberRepository: Verifying Member - ID: $memberId, Company: $companyName, Password: [PROTECTED]")
         return try {
             val response = client.post("$baseUrl/verify") {
                 contentType(ContentType.Application.Json)
-                setBody(VerifyMemberRequest(memberId, companyName))
+                setBody(VerifyMemberRequest(memberId, companyName, password))
             }
             
             if (response.status.value in 200..299) {
@@ -52,12 +52,12 @@ class MemberRepository {
         }
     }
 
-    suspend fun addAmount(memberId: String, amount: Double, cardMfid: String): Result<AddAmountResponse> {
-        println("MemberRepository: Adding Amount - ID: $memberId, Amount: $amount, Card MFID: $cardMfid")
+    suspend fun addAmount(memberId: String, amount: Double, cardMfid: String, password: String): Result<AddAmountResponse> {
+        println("MemberRepository: Adding Amount - ID: $memberId, Amount: $amount, Card MFID: $cardMfid, Password: [PROTECTED]")
         return try {
             val response: AddAmountResponse = client.post("$baseUrl/add-amount") {
                 contentType(ContentType.Application.Json)
-                setBody(AddAmountRequest(memberId, amount, cardMfid))
+                setBody(AddAmountRequest(memberId, amount, cardMfid, password))
             }.body()
             println("MemberRepository: Response received: $response")
             if (response.memberId != null) {

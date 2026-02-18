@@ -5,7 +5,8 @@ import kotlinx.serialization.Serializable
 @Serializable
 data class VerifyMemberRequest(
     val memberId: String,
-    val companyName: String
+    val companyName: String,
+    val password: String
 )
 
 @Serializable
@@ -20,7 +21,8 @@ data class VerifyMemberResponse(
 data class AddAmountRequest(
     val memberId: String,
     val amount: Double,
-    val card_mfid: String
+    val card_mfid: String,
+    val password: String
 )
 
 @Serializable

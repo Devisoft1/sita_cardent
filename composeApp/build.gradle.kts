@@ -52,6 +52,9 @@ kotlin {
             implementation(libs.ktor.client.logging)
             implementation(libs.ktor.serialization.kotlinx.json)
             implementation(libs.kotlinx.serialization.json)
+            // Coil for remote image loading
+            implementation("io.coil-kt.coil3:coil-compose:3.0.0")
+            implementation("io.coil-kt.coil3:coil-network-ktor3:3.0.0")
         }
         iosMain.dependencies {
             implementation(libs.ktor.client.darwin)

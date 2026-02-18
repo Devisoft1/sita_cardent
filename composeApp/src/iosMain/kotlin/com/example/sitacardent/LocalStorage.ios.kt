@@ -7,13 +7,19 @@ actual object LocalStorage {
     private const val KEY_NAME = "com.example.sitacardent.user_name"
     private const val KEY_EMAIL = "com.example.sitacardent.user_email"
     private const val KEY_SHOP_ID = "com.example.sitacardent.shop_id"
+    private const val KEY_LOGO_URL = "com.example.sitacardent.logo_url"
 
-    actual fun saveAuth(token: String, name: String, email: String, shopId: Int) {
+    actual fun saveAuth(token: String, name: String, email: String, shopId: Int, logoUrl: String?) {
         val userDefaults = NSUserDefaults.standardUserDefaults
         userDefaults.setObject(token, forKey = KEY_TOKEN)
         userDefaults.setObject(name, forKey = KEY_NAME)
         userDefaults.setObject(email, forKey = KEY_EMAIL)
         userDefaults.setInteger(shopId.toLong(), forKey = KEY_SHOP_ID)
+        if (logoUrl != null) {
+            userDefaults.setObject(logoUrl, forKey = KEY_LOGO_URL)
+        } else {
+            userDefaults.removeObjectForKey(KEY_LOGO_URL)
+        }
         userDefaults.synchronize()
     }
 
@@ -34,12 +40,17 @@ actual object LocalStorage {
         return null
     }
 
+    actual fun getLogoUrl(): String? {
+        return NSUserDefaults.standardUserDefaults.stringForKey(KEY_LOGO_URL)
+    }
+
     actual fun clearAuth() {
         val userDefaults = NSUserDefaults.standardUserDefaults
         userDefaults.removeObjectForKey(KEY_TOKEN)
         userDefaults.removeObjectForKey(KEY_NAME)
         userDefaults.removeObjectForKey(KEY_EMAIL)
         userDefaults.removeObjectForKey(KEY_SHOP_ID)
+        userDefaults.removeObjectForKey(KEY_LOGO_URL)
         userDefaults.synchronize()
     }
 }

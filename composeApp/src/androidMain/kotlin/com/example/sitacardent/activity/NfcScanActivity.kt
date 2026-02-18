@@ -79,7 +79,7 @@ class NfcScanActivity : ComponentActivity() {
                          android.widget.Toast.makeText(this, "Debug: Simulating Scan...", android.widget.Toast.LENGTH_SHORT).show()
                          // Simulate delay
                          timeoutHandler.postDelayed({
-                             scannedData = ScannedCardData("1001", "Test Company Ltd", "DDOO904GHYTEC")
+                             scannedData = ScannedCardData("1001", "Test Company Ltd", "DDOO904GHYTEC", "debugPass123")
                              stopScanning()
                          }, 1000)
                     }
@@ -176,16 +176,18 @@ class NfcScanActivity : ComponentActivity() {
             if (authenticate(mifare, 3)) {
                 val id = readBlockString(mifare, 12)
                 val company = readBlockString(mifare, 13)
-                // We ignore validity string (block 14) for now as the API fetches it?
-                // The API 'verifyMember' only needs ID and Company.
-                // The original code passed 'validity' to displayMemberInfo.
-                // But the Compose 'verifyMember' fetches fresh data from API including validity.
-                // So we only need ID and Company to call verify.
                 
+                // Read Password from Block 18 (Sector 4)
+                var password = ""
+                if (authenticate(mifare, 4)) {
+                     password = readBlockString(mifare, 18)
+                }
+
                 if (id.isNotEmpty()) {
                     val mfid = bytesToHex(tag.id)
-                    return ScannedCardData(id, company, mfid)
+                    return ScannedCardData(id, company, mfid, password)
                 }
+
             }
         } catch (e: Exception) {
             Log.e(TAG, "Read Error", e)

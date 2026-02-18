@@ -38,7 +38,8 @@ private val DividerColor = Color(0xFFEEEEEE)
 data class ScannedCardData(
     val memberId: String,
     val companyName: String,
-    val cardMfid: String
+    val cardMfid: String,
+    val password: String
 )
 
 @OptIn(ExperimentalFoundationApi::class)
@@ -53,6 +54,7 @@ fun NfcScanScreen(
     onLogoLongClick: (() -> Unit)? = null
 ) {
     var invoiceAmount by remember { mutableStateOf("") }
+    var password by remember { mutableStateOf("") }
     
     // API State
     val scope = rememberCoroutineScope()
@@ -105,12 +107,14 @@ fun NfcScanScreen(
         memberValidity = null
         memberCurrentTotal = null
         invoiceAmount = ""
+        password = ""
     }
 
     fun verifyMember(
         idToVerify: String,
         companyToVerify: String,
-        cardMfid: String
+        cardMfid: String,
+        password: String
     ) {
         if (idToVerify.isBlank() || companyToVerify.isBlank()) {
             apiError = "Please enter Member ID and Company Name"
@@ -122,7 +126,8 @@ fun NfcScanScreen(
         successMessage = null
         
         scope.launch {
-            val result = repository.verifyMember(idToVerify, companyToVerify)
+            // Pass password to verifyMember
+            val result = repository.verifyMember(idToVerify, companyToVerify, password)
             result.onSuccess { response ->
                 verifiedMemberId = response.memberId
                 verifiedCompanyName = response.companyName
@@ -144,7 +149,8 @@ fun NfcScanScreen(
     LaunchedEffect(externalScannedData) {
         externalScannedData?.let { data ->
             // Pass data directly to ensure immediate verification
-            verifyMember(data.memberId, data.companyName, data.cardMfid)
+            verifyMember(data.memberId, data.companyName, data.cardMfid, data.password)
+            password = data.password
             onExternalDataConsumed()
         }
     }
@@ -161,16 +167,22 @@ fun NfcScanScreen(
             return
         }
 
+        if (password.isBlank()) {
+            apiError = "Card authentication failed (Missing Password)"
+            return
+        }
+
         isLoading = true
         apiError = null
         successMessage = null
 
         scope.launch {
-            val result = repository.addAmount(verifiedMemberId.toString(), amount, verifiedCardMfid ?: "")
+            val result = repository.addAmount(verifiedMemberId.toString(), amount, verifiedCardMfid ?: "", password)
             result.onSuccess { response ->
                 successMessage = "Success! New Total: ${response.newCardTotal}"
                 memberCurrentTotal = response.newCardTotal
                 invoiceAmount = ""
+                password = ""
                 isLoading = false
          
                 // Wait for 2 seconds then reset the screen
@@ -274,6 +286,8 @@ fun NfcScanScreen(
                 }
 
                 // Logo positioned to overlap header and content
+                val logoUrl = remember { LocalStorage.getLogoUrl() }
+                
                 Box(
                     modifier = Modifier
                         .align(Alignment.TopCenter)
@@ -295,12 +309,15 @@ fun NfcScanScreen(
                             }
                         )
                 ) {
-                    Image(
-                        painter = painterResource(Res.drawable.sita_logo),
+                    coil3.compose.AsyncImage(
+                        model = logoUrl,
                         contentDescription = "Tap to Scan",
                         modifier = Modifier
                             .fillMaxSize()
-                            .padding(4.dp)
+                            .padding(4.dp),
+                        placeholder = painterResource(Res.drawable.sita_logo),
+                        error = painterResource(Res.drawable.sita_logo),
+                        fallback = painterResource(Res.drawable.sita_logo)
                     )
                 }
             }
@@ -446,8 +463,15 @@ fun NfcScanScreen(
                                 unfocusedBorderColor = SitaBlue,
                                 focusedLabelColor = SitaBlue,
                                 unfocusedLabelColor = SitaBlue
+                            ),
+                            keyboardOptions = androidx.compose.foundation.text.KeyboardOptions(
+                                keyboardType = androidx.compose.ui.text.input.KeyboardType.Number
                             )
                         )
+
+                        Spacer(Modifier.height(10.dp))
+
+
 
                         Spacer(Modifier.height(20.dp))
 
