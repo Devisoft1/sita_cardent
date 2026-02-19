@@ -169,28 +169,67 @@ class NfcScanActivity : ComponentActivity() {
         return data
     }
 
+    private fun decodeBlock(bytes: ByteArray): String {
+        // Stop at first null byte
+        val validLen = bytes.indexOfFirst { it == 0.toByte() }.let { if (it == -1) bytes.size else it }
+        if (validLen == 0) return ""
+        val validBytes = bytes.copyOfRange(0, validLen)
+
+        // Check if all bytes are printable ASCII (32..126)
+        // If not, assume it's binary/hex pointer and convert to Hex String
+        val isPrintableAscii = validBytes.all { it >= 32 && it <= 126 }
+
+        return if (isPrintableAscii) {
+            String(validBytes, Charset.forName("US-ASCII")).trim()
+        } else {
+            bytesToHex(validBytes)
+        }
+    }
+
     private fun readMifareClassicData(tag: Tag): ScannedCardData? {
         val mifare = MifareClassic.get(tag) ?: return null
         try {
             mifare.connect()
+            Log.d(TAG, "Mifare connected")
+            
             if (authenticate(mifare, 3)) {
-                val id = readBlockString(mifare, 12)
-                val company = readBlockString(mifare, 13)
+                Log.d(TAG, "Sector 3 authenticated")
+                
+                val idBytes = mifare.readBlock(12)
+                Log.d(TAG, "Block 12 Raw: ${bytesToHex(idBytes)}")
+                val id = decodeBlock(idBytes)
+                Log.d(TAG, "Block 12 Decoded: '$id'")
+
+                val companyBytes = mifare.readBlock(13)
+                Log.d(TAG, "Block 13 Raw: ${bytesToHex(companyBytes)}")
+                val company = decodeBlock(companyBytes)
+                Log.d(TAG, "Block 13 Decoded: '$company'")
                 
                 // Read Password from Block 18 (Sector 4)
                 var password = ""
                 if (authenticate(mifare, 4)) {
-                     password = readBlockString(mifare, 18)
+                     Log.d(TAG, "Sector 4 authenticated")
+                     val pwdBytes = mifare.readBlock(18)
+                     Log.d(TAG, "Block 18 Raw: ${bytesToHex(pwdBytes)}")
+                     password = decodeBlock(pwdBytes)
+                     Log.d(TAG, "Block 18 Decoded: '$password'")
+                } else {
+                     Log.e(TAG, "Sector 4 Failed to authenticate")
                 }
 
                 if (id.isNotEmpty()) {
                     val mfid = bytesToHex(tag.id)
+                    Log.d(TAG, "Read Success: $id, $company, $mfid")
                     return ScannedCardData(id, company, mfid, password)
+                } else {
+                    Log.e(TAG, "Read Failed: ID is empty")
                 }
 
+            } else {
+                Log.e(TAG, "Sector 3 Failed to authenticate")
             }
         } catch (e: Exception) {
-            Log.e(TAG, "Read Error", e)
+            Log.e(TAG, "Read Error during execution", e)
         } finally {
             try { mifare.close() } catch (e: Exception) {}
         }

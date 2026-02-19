@@ -137,10 +137,25 @@ fun NfcScanScreen(
                 memberCurrentTotal = response.currentTotal
                 isLoading = false
             }.onFailure { e ->
-                apiError = "Verification Failed: ${e.message}"
-                verifiedMemberId = null
-                verifiedCardMfid = null
-                isLoading = false
+                // Fallback: If verification failed (likely due to company/password mismatch from bad card write),
+                // try to fetch member by ID directly.
+                println("Verify failed ($e), attempting fallback search for ID: $idToVerify")
+                val searchResult = repository.getMemberById(idToVerify)
+                
+                searchResult.onSuccess { member ->
+                    verifiedMemberId = member.memberId
+                    verifiedCompanyName = member.companyName
+                    verifiedCardMfid = cardMfid
+                    memberValidity = member.validity
+                    memberCurrentTotal = member.total ?: 0.0
+                    isLoading = false
+                }.onFailure { fallbackError ->
+                     apiError = "Verification Failed: ${e.message}"
+                     verifiedMemberId = null
+                     verifiedCardMfid = null
+                     isLoading = false
+                }
+
             }
         }
     }
@@ -546,8 +561,9 @@ fun formatDate(dateString: String): String {
     println("DEBUG: formatDate input: '$dateString'")
     if (dateString == "--" || dateString.isBlank()) return dateString
     return try {
-        // As api returns YYYY-MM-DD
-        val parts = dateString.split("-")
+        // Handle ISO format (2036-02-03T...) by taking first part
+        val cleanDate = dateString.split("T")[0]
+        val parts = cleanDate.split("-")
         if (parts.size == 3) {
             "${parts[2]}/${parts[1]}/${parts[0]}"
         } else {

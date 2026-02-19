@@ -2,10 +2,13 @@ package com.example.sitacardent.network
 
 import com.example.sitacardent.model.AddAmountRequest
 import com.example.sitacardent.model.AddAmountResponse
+import com.example.sitacardent.model.MemberDto
+import com.example.sitacardent.model.SearchMemberResponse
 import com.example.sitacardent.model.VerifyMemberRequest
 import com.example.sitacardent.model.VerifyMemberResponse
 import io.ktor.client.HttpClient
 import io.ktor.client.call.body
+import io.ktor.client.request.get
 import io.ktor.client.request.post
 import io.ktor.client.request.setBody
 import io.ktor.client.statement.bodyAsText
@@ -69,6 +72,47 @@ class MemberRepository {
             }
         } catch (e: Exception) {
             println("MemberRepository: Add Amount Failed - ${e.message}")
+            Result.failure(e)
+        }
+    }
+
+    suspend fun searchMember(query: String): Result<List<MemberDto>> {
+        println("MemberRepository: Searching Member - Query: $query")
+        return try {
+            // Note: baseUrl is ".../api/members". GET request to just "$baseUrl" with params.
+            val response = client.get(baseUrl) {
+                url {
+                    parameters.append("search", query)
+                }
+            }
+            if (response.status.value in 200..299) {
+                 val searchResponse = response.body<SearchMemberResponse>()
+                 println("MemberRepository: Search Success - Found ${searchResponse.members.size} members")
+                 Result.success(searchResponse.members)
+            } else {
+                 println("MemberRepository: Search Failed - ${response.status}")
+                 Result.failure(Exception("Search failed: ${response.status}"))
+            }
+        } catch (e: Exception) {
+            println("MemberRepository: Search Error - ${e.message}")
+            Result.failure(e)
+        }
+    }
+
+    suspend fun getMemberById(id: String): Result<MemberDto> {
+        println("MemberRepository: Get Member By ID - ID: $id")
+        return try {
+            val response = client.get("$baseUrl/$id")
+            if (response.status.value in 200..299) {
+                val member = response.body<MemberDto>()
+                println("MemberRepository: Get By ID Success - ${member.companyName}")
+                Result.success(member)
+            } else {
+                println("MemberRepository: Get By ID Failed - ${response.status}")
+                Result.failure(Exception("Get by ID failed: ${response.status}"))
+            }
+        } catch (e: Exception) {
+            println("MemberRepository: Get By ID Error - ${e.message}")
             Result.failure(e)
         }
     }
