@@ -51,6 +51,8 @@ fun NfcScanScreen(
     onExternalScanRequest: (() -> Unit)? = null,
     externalScannedData: ScannedCardData? = null,
     onExternalDataConsumed: () -> Unit = {},
+    externalScanError: String? = null,
+    onExternalErrorConsumed: () -> Unit = {},
     onLogoLongClick: (() -> Unit)? = null
 ) {
     var invoiceAmount by remember { mutableStateOf("") }
@@ -167,6 +169,15 @@ fun NfcScanScreen(
             verifyMember(data.memberId, data.companyName, data.cardMfid, data.password)
             password = data.password
             onExternalDataConsumed()
+        }
+    }
+
+    // Handle external scan errors (e.g. Empty Card)
+    LaunchedEffect(externalScanError) {
+        externalScanError?.let { error ->
+            apiError = error
+            isLoading = false
+            onExternalErrorConsumed()
         }
     }
 

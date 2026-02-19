@@ -29,6 +29,7 @@ class NfcScanActivity : ComponentActivity() {
     // State holders for Compose
     private var isScanning by mutableStateOf(false)
     private var scannedData by mutableStateOf<ScannedCardData?>(null)
+    private var scanError by mutableStateOf<String?>(null)
     
     // NFC Adapter
     private var nfcAdapter: NfcAdapter? = null
@@ -56,7 +57,7 @@ class NfcScanActivity : ComponentActivity() {
                 userEmail = userEmail,
                 onBackClick = { 
                    // Navigate back to Login (MainActivity)
-                   LocalStorage.clearAuth() // Fix: Clear session so MainActivity doesn't auto-login
+                   LocalStorage.clearAuth() 
                    val intent = Intent(this, MainActivity::class.java)
                    intent.flags = Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TASK
                    startActivity(intent)
@@ -68,10 +69,11 @@ class NfcScanActivity : ComponentActivity() {
                 },
                 externalScannedData = scannedData,
                 onExternalDataConsumed = {
-                    // Reset scanned data so it doesn't trigger again immediately if not cleared
-                    // But typically we keep it until next scan.
-                    // The Composable 'LaunchedEffect' uses it to fill fields. 
-                    // We can clear it when new scan starts.
+                    scannedData = null
+                },
+                externalScanError = scanError,
+                onExternalErrorConsumed = {
+                    scanError = null
                 },
                 onLogoLongClick = {
                     // DEBUG: Simulate a successful scan
@@ -95,6 +97,7 @@ class NfcScanActivity : ComponentActivity() {
         }
         isScanning = true
         scannedData = null // Clear previous data
+        scanError = null
         enableForegroundDispatch()
         
         // Sync with Composable's 60s timeout
@@ -143,14 +146,19 @@ class NfcScanActivity : ComponentActivity() {
             val tag = intent.getParcelableExtra<Tag>(NfcAdapter.EXTRA_TAG)
             tag?.let {
                 if (isScanning) {
-                    val data = readMifareClassicData(it)
-                    if (data != null) {
+                    val result = readMifareClassicData(it)
+                    result.onSuccess { data ->
                         scannedData = data
                         stopScanning() // Scan successful, stop scanning
-                    } else {
-                        // Failed to read, maybe show error? 
-                        // For now we just stay in scanning mode or stop?
-                        // Let's keep scanning.
+                    }.onFailure { e ->
+                        // Only show error if it's explicitly about empty card or read failure that matters
+                        if (e.message == "Card is empty" || e.message == "Read Failed") {
+                             scanError = e.message
+                             stopScanning()
+                        } else {
+                             Log.e(TAG, "Scan failed silently: ${e.message}")
+                             // Keep scanning?
+                        }
                     }
                 }
             }
@@ -186,8 +194,8 @@ class NfcScanActivity : ComponentActivity() {
         }
     }
 
-    private fun readMifareClassicData(tag: Tag): ScannedCardData? {
-        val mifare = MifareClassic.get(tag) ?: return null
+    private fun readMifareClassicData(tag: Tag): Result<ScannedCardData> {
+        val mifare = MifareClassic.get(tag) ?: return Result.failure(Exception("Not a Mifare Classic tag"))
         try {
             mifare.connect()
             Log.d(TAG, "Mifare connected")
@@ -220,20 +228,23 @@ class NfcScanActivity : ComponentActivity() {
                 if (id.isNotEmpty()) {
                     val mfid = bytesToHex(tag.id)
                     Log.d(TAG, "Read Success: $id, $company, $mfid")
-                    return ScannedCardData(id, company, mfid, password)
+                    // Note: password might be empty if sector 4 failed or block 18 was empty
+                    return Result.success(ScannedCardData(id, company, mfid, password))
                 } else {
                     Log.e(TAG, "Read Failed: ID is empty")
+                    return Result.failure(Exception("Card is empty"))
                 }
 
             } else {
                 Log.e(TAG, "Sector 3 Failed to authenticate")
+                return Result.failure(Exception("Card Authentication Failed"))
             }
         } catch (e: Exception) {
             Log.e(TAG, "Read Error during execution", e)
+            return Result.failure(e)
         } finally {
             try { mifare.close() } catch (e: Exception) {}
         }
-        return null
     }
 
 
