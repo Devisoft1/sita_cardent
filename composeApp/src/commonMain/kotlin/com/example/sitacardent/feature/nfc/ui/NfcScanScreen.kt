@@ -49,6 +49,7 @@ fun NfcScanScreen(
     onBackClick: () -> Unit,
     isExternalScanning: Boolean? = null,
     onExternalScanRequest: (() -> Unit)? = null,
+    onExternalScanCancel: (() -> Unit)? = null,
     externalScannedData: ScannedCardData? = null,
     onExternalDataConsumed: () -> Unit = {},
     externalScanError: String? = null,
@@ -383,6 +384,23 @@ fun NfcScanScreen(
                     colors = ButtonDefaults.buttonColors(containerColor = Color.Red)
                 ) {
                     Text("Cancel", color = Color.White)
+                }
+            }
+
+            if (isScanning && apiError == null && successMessage == null && !showMemberInfo) {
+                TextButton(
+                    onClick = {
+                        if (onExternalScanCancel != null) {
+                            onExternalScanCancel()
+                        } else {
+                            isScanningInternal = false
+                        }
+                    },
+                    modifier = Modifier
+                        .align(Alignment.CenterHorizontally)
+                        .padding(top = 8.dp)
+                ) {
+                    Text("Stop Scanning", color = Color.Red, fontWeight = FontWeight.Bold)
                 }
             }
 

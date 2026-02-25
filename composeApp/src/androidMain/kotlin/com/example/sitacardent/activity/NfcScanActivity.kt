@@ -67,6 +67,9 @@ class NfcScanActivity : ComponentActivity() {
                 onExternalScanRequest = {
                     startScanning()
                 },
+                onExternalScanCancel = {
+                    stopScanning()
+                },
                 externalScannedData = scannedData,
                 onExternalDataConsumed = {
                     scannedData = null
