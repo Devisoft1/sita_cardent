@@ -9,36 +9,71 @@ import android.nfc.tech.MifareClassic
 import android.os.Build
 import android.os.Bundle
 import android.util.Log
-import androidx.activity.ComponentActivity
-import androidx.activity.compose.setContent
+import android.view.View
+import android.widget.Button
+import android.widget.ImageButton
+import android.widget.ImageView
+import android.widget.TextView
 import androidx.activity.enableEdgeToEdge
-import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableStateOf
-import androidx.compose.runtime.setValue
+import androidx.appcompat.app.AppCompatActivity
+import androidx.lifecycle.lifecycleScope
 import com.example.sitacardent.LocalStorage
-import com.example.sitacardent.NfcScanScreen
+import com.example.sitacardent.R
 import com.example.sitacardent.ScannedCardData
+import com.example.sitacardent.network.MemberRepository
+import com.example.sitacardent.model.VerifyMemberResponse
+import com.google.android.material.textfield.TextInputEditText
+import kotlinx.coroutines.launch
 import java.nio.charset.Charset
+import kotlin.coroutines.resume
+import kotlin.coroutines.suspendCoroutine
+import kotlinx.coroutines.delay
 
-class NfcScanActivity : ComponentActivity() {
+
+class NfcScanActivity : AppCompatActivity() {
 
     companion object {
         private const val TAG = "NfcScanActivity"
     }
 
-    // State holders for Compose
-    private var isScanning by mutableStateOf(false)
-    private var scannedData by mutableStateOf<ScannedCardData?>(null)
-    private var scanError by mutableStateOf<String?>(null)
+    // State
+    private var isScanning = false
+    private var scannedData: ScannedCardData? = null
+    private var scanError: String? = null
     
     // NFC Adapter
     private var nfcAdapter: NfcAdapter? = null
+    private val repository = MemberRepository()
 
-    // Timeout logic handled by Composable mostly, but we ensure dispatch is disabled
+    // UI Elements
+    private lateinit var tvDisplayName: TextView
+    private lateinit var btnLogout: ImageButton
+    private lateinit var imgLogo: ImageView
+    private lateinit var tvStatus: TextView
+    private lateinit var btnStopScanning: Button
+    
+    // Member Details UI
+    private lateinit var cvMemberDetails: View
+    private lateinit var tvMemberId: TextView
+    private lateinit var tvCompanyName: TextView
+    private lateinit var tvExpiryDate: TextView
+    private lateinit var tvCurrentBalance: TextView
+    
+    // Transaction UI
+    private lateinit var cvTransaction: View
+    private lateinit var etAmount: TextInputEditText
+    private lateinit var btnCancel: Button
+    private lateinit var btnConfirm: Button
+
+    // Current Member Data
+    private var currentVerifiedMemberId: Long? = null
+    private var currentVerifiedCardMfid: String? = null
+    private var currentPassword = ""
+
     private val timeoutHandler = android.os.Handler(android.os.Looper.getMainLooper())
     private val timeoutRunnable = Runnable { 
-        Log.d(TAG, "NFC Scan Timeout reached (Activity side).")
-        // We just stop the dispatch. The UI 'isTimeout' state will handle the message.
+        Log.d(TAG, "NFC Scan Timeout reached.")
+        showStatus("No card detected\nPlease try again", true)
         stopScanning()
     }
 
@@ -48,48 +83,106 @@ class NfcScanActivity : ComponentActivity() {
         // Use edge-to-edge for the proper full screen capability
         enableEdgeToEdge()
 
+        setContentView(R.layout.activity_nfc_scan)
+        
         nfcAdapter = NfcAdapter.getDefaultAdapter(this)
         
         val userEmail = intent.getStringExtra("USER_EMAIL") ?: "User"
+        val displayName = userEmail.substringBefore("@")
 
-        setContent {
-            NfcScanScreen(
-                userEmail = userEmail,
-                onBackClick = { 
-                   // Navigate back to Login (MainActivity)
-                   LocalStorage.clearAuth() 
-                   val intent = Intent(this, MainActivity::class.java)
-                   intent.flags = Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TASK
-                   startActivity(intent)
-                   finish()
-                },
-                isExternalScanning = isScanning,
-                onExternalScanRequest = {
-                    startScanning()
-                },
-                onExternalScanCancel = {
+        initViews()
+        
+        tvDisplayName.text = displayName
+        
+        setupListeners()
+        resetState()
+    }
+    
+    private fun initViews() {
+        tvDisplayName = findViewById(R.id.tvDisplayName)
+        btnLogout = findViewById(R.id.btnLogout)
+        imgLogo = findViewById(R.id.imgLogo)
+        tvStatus = findViewById(R.id.tvStatus)
+        btnStopScanning = findViewById(R.id.btnStopScanning)
+        
+        cvMemberDetails = findViewById(R.id.cvMemberDetails)
+        tvMemberId = findViewById(R.id.tvMemberId)
+        tvCompanyName = findViewById(R.id.tvCompanyName)
+        tvExpiryDate = findViewById(R.id.tvExpiryDate)
+        tvCurrentBalance = findViewById(R.id.tvCurrentBalance)
+        
+        cvTransaction = findViewById(R.id.cvTransaction)
+        etAmount = findViewById(R.id.etAmount)
+        btnCancel = findViewById(R.id.btnCancel)
+        btnConfirm = findViewById(R.id.btnConfirm)
+        
+        // Hide back button since it was removed in Compose previously
+        findViewById<View>(R.id.btnBack).visibility = View.GONE
+    }
+    
+    private fun setupListeners() {
+        btnLogout.setOnClickListener {
+            LocalStorage.clearAuth() 
+            val intent = Intent(this, MainActivity::class.java)
+            intent.flags = Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TASK
+            startActivity(intent)
+            finish()
+        }
+        
+        imgLogo.setOnClickListener {
+            if (scanError != null || tvStatus.text.toString() == "Transaction Successful") {
+                resetState()
+            } else {
+                startScanning()
+            }
+        }
+        
+        imgLogo.setOnLongClickListener {
+            // DEBUG: Simulate a successful scan
+            runOnUiThread {
+                android.widget.Toast.makeText(this, "Debug: Simulating Scan...", android.widget.Toast.LENGTH_SHORT).show()
+                timeoutHandler.postDelayed({
+                    onCardScanned(ScannedCardData("1001", "Test Company Ltd", "DDOO904GHYTEC", "debugPass123"))
                     stopScanning()
-                },
-                externalScannedData = scannedData,
-                onExternalDataConsumed = {
-                    scannedData = null
-                },
-                externalScanError = scanError,
-                onExternalErrorConsumed = {
-                    scanError = null
-                },
-                onLogoLongClick = {
-                    // DEBUG: Simulate a successful scan
-                    runOnUiThread {
-                         android.widget.Toast.makeText(this, "Debug: Simulating Scan...", android.widget.Toast.LENGTH_SHORT).show()
-                         // Simulate delay
-                         timeoutHandler.postDelayed({
-                             scannedData = ScannedCardData("1001", "Test Company Ltd", "DDOO904GHYTEC", "debugPass123")
-                             stopScanning()
-                         }, 1000)
-                    }
-                }
-            )
+                }, 1000)
+            }
+            true
+        }
+        
+        btnStopScanning.setOnClickListener {
+            stopScanning()
+            resetState()
+        }
+        
+        btnCancel.setOnClickListener {
+            resetState()
+        }
+        
+        btnConfirm.setOnClickListener {
+            addAmount()
+        }
+    }
+    
+    private fun resetState() {
+        currentVerifiedMemberId = null
+        currentVerifiedCardMfid = null
+        currentPassword = ""
+        etAmount.setText("")
+        scanError = null
+        
+        cvMemberDetails.visibility = View.GONE
+        cvTransaction.visibility = View.GONE
+        btnStopScanning.visibility = View.GONE
+        
+        showStatus("Ready to Verify\nTap logo to scan", false)
+    }
+    
+    private fun showStatus(message: String, isError: Boolean = false, isSuccess: Boolean = false) {
+        tvStatus.text = message
+        when {
+            isError -> tvStatus.setTextColor(android.graphics.Color.RED)
+            isSuccess -> tvStatus.setTextColor(android.graphics.Color.parseColor("#4CAF50"))
+            else -> tvStatus.setTextColor(android.graphics.Color.parseColor("#757575"))
         }
     }
 
@@ -99,8 +192,12 @@ class NfcScanActivity : ComponentActivity() {
             return
         }
         isScanning = true
-        scannedData = null // Clear previous data
+        scannedData = null
         scanError = null
+        showStatus("Searching for card...\nHold it near the back", false)
+        btnStopScanning.visibility = View.VISIBLE
+        cvMemberDetails.visibility = View.GONE
+        cvTransaction.visibility = View.GONE
         enableForegroundDispatch()
         
         // Sync with Composable's 60s timeout
@@ -109,7 +206,8 @@ class NfcScanActivity : ComponentActivity() {
     }
 
     private fun stopScanning() {
-        isScanning = false // Updates UI to 'Scanning' false (if not timeout)
+        isScanning = false 
+        btnStopScanning.visibility = View.GONE
         disableForegroundDispatch()
         timeoutHandler.removeCallbacks(timeoutRunnable)
     }
@@ -152,15 +250,15 @@ class NfcScanActivity : ComponentActivity() {
                     val result = readMifareClassicData(it)
                     result.onSuccess { data ->
                         scannedData = data
-                        stopScanning() // Scan successful, stop scanning
+                        onCardScanned(data)
+                        stopScanning()
                     }.onFailure { e ->
-                        // Only show error if it's explicitly about empty card or read failure that matters
                         if (e.message == "Card is empty" || e.message == "Read Failed") {
                              scanError = e.message
+                             showStatus(scanError ?: "Error", true)
                              stopScanning()
                         } else {
                              Log.e(TAG, "Scan failed silently: ${e.message}")
-                             // Keep scanning?
                         }
                     }
                 }
@@ -259,5 +357,102 @@ class NfcScanActivity : ComponentActivity() {
             hexChars[j * 2 + 1] = "0123456789ABCDEF"[v and 0x0F]
         }
         return String(hexChars)
+    }
+
+    private fun onCardScanned(data: ScannedCardData) {
+        showStatus("Processing...", false)
+        currentPassword = data.password
+        btnStopScanning.visibility = View.GONE
+
+        lifecycleScope.launch {
+            val result = repository.verifyMember(data.memberId, data.companyName, data.password)
+            result.onSuccess { response ->
+                displayMemberInfo(response, data.cardMfid)
+            }.onFailure { e ->
+                Log.d(TAG, "Verify failed ($e), attempting fallback search")
+                val searchResult = repository.getMemberById(data.memberId)
+                
+                searchResult.onSuccess { member ->
+                    val response = VerifyMemberResponse(
+                        memberId = member.memberId ?: 0,
+                        companyName = member.companyName ?: "",
+                        validity = member.validity ?: "",
+                        currentTotal = member.total ?: 0.0
+                    )
+                    displayMemberInfo(response, data.cardMfid)
+                }.onFailure { fallbackError ->
+                    showStatus("Verification Failed: ${e.message}", true)
+                    scanError = "Verification Failed"
+                }
+            }
+        }
+    }
+
+    private fun displayMemberInfo(member: VerifyMemberResponse, mfid: String) {
+        currentVerifiedMemberId = member.memberId
+        currentVerifiedCardMfid = mfid
+        
+        cvMemberDetails.visibility = View.VISIBLE
+        cvTransaction.visibility = View.VISIBLE
+        showStatus("Card Verified successfully", false, true)
+        
+        tvMemberId.text = member.memberId.toString()
+        tvCompanyName.text = member.companyName
+        tvExpiryDate.text = formatDate(member.validity)
+        tvCurrentBalance.text = member.currentTotal.toString()
+    }
+
+    private fun formatDate(dateString: String): String {
+        if (dateString == "--" || dateString.isBlank()) return dateString
+        return try {
+            val cleanDate = dateString.split("T")[0]
+            val parts = cleanDate.split("-")
+            if (parts.size == 3) {
+                "${parts[2]}/${parts[1]}/${parts[0]}"
+            } else {
+                dateString
+            }
+        } catch (e: Exception) {
+            dateString
+        }
+    }
+
+    private fun addAmount() {
+        val memberId = currentVerifiedMemberId
+        if (memberId == null) {
+            showStatus("Please verify member first", true)
+            return
+        }
+        
+        val amountStr = etAmount.text.toString()
+        val amount = amountStr.toDoubleOrNull()
+        if (amount == null || amount <= 0) {
+            showStatus("Please enter a valid amount", true)
+            return
+        }
+
+        if (currentPassword.isBlank()) {
+            showStatus("Card authentication failed (Missing Password)", true)
+            return
+        }
+
+        showStatus("Processing...", false)
+        btnConfirm.isEnabled = false
+
+        lifecycleScope.launch {
+            val result = repository.addAmount(memberId.toString(), amount, currentVerifiedCardMfid ?: "", currentPassword)
+            result.onSuccess { response ->
+                showStatus("Success! New Total: ${response.newCardTotal}", false, true)
+                tvCurrentBalance.text = response.newCardTotal.toString()
+                etAmount.setText("")
+                
+                delay(2000)
+                resetState()
+                btnConfirm.isEnabled = true
+            }.onFailure { e ->
+                showStatus("Transaction Failed: ${e.message}", true)
+                btnConfirm.isEnabled = true
+            }
+        }
     }
 }
