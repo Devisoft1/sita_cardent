@@ -99,8 +99,10 @@ class NfcScanActivity : AppCompatActivity() {
     }
     
     private fun initViews() {
-        tvDisplayName = findViewById(R.id.tvDisplayName)
-        btnLogout = findViewById(R.id.btnLogout)
+        val appBar = findViewById<View>(R.id.includeAppBar)
+        tvDisplayName = appBar.findViewById(R.id.tvAppBarTitle)
+        btnLogout = appBar.findViewById(R.id.btnAppBarAction)
+        
         imgLogo = findViewById(R.id.imgLogo)
         tvStatus = findViewById(R.id.tvStatus)
         btnStopScanning = findViewById(R.id.btnStopScanning)
@@ -115,9 +117,7 @@ class NfcScanActivity : AppCompatActivity() {
         etAmount = findViewById(R.id.etAmount)
         btnCancel = findViewById(R.id.btnCancel)
         btnConfirm = findViewById(R.id.btnConfirm)
-        
-        // Hide back button since it was removed in Compose previously
-        findViewById<View>(R.id.btnBack).visibility = View.GONE
+        // Note: btnBack was removed from layout_app_bar_main.xml per previous instructions
     }
     
     private fun setupListeners() {

@@ -19,63 +19,22 @@
             android:paddingBottom="32dp">
 
             <!-- Gradient Header Background -->
+            <!-- The Compose gradient is 240dp tall -->
             <View
                 android:id="@+id/viewHeaderBackground"
                 android:layout_width="match_parent"
                 android:layout_height="240dp"
                 android:background="@drawable/bg_header_curve" 
                 app:layout_constraintTop_toTopOf="parent" />
-            <!-- Note: Assuming bg_header_curve exists or we use a gradient drawable. 
-                 If not, we can use a color or shape.
-                 The Compose version uses a Brush.linearGradient.
-                 Ideally we should create 'header_gradient.xml' if not exists, 
-                 but for now assuming bg_header_curve or similar usage. -->
 
-            <!-- Back Button -->
-            <ImageButton
-                android:id="@+id/btnBack"
-                android:layout_width="52dp"
-                android:layout_height="52dp"
-                android:layout_marginStart="12dp"
-                android:layout_marginTop="8dp"
-                android:background="?attr/selectableItemBackgroundBorderless"
-                android:contentDescription="Go Back"
-                android:padding="12dp"
-                android:src="@drawable/ic_back_white"
-                app:layout_constraintStart_toStartOf="parent"
-                app:layout_constraintTop_toTopOf="parent"
-                app:tint="@color/white" />
-
-            <!-- Display Name -->
-            <TextView
-                android:id="@+id/tvDisplayName"
-                android:layout_width="wrap_content"
+            <!-- App Bar Included -->
+            <include
+                android:id="@+id/includeAppBar"
+                layout="@layout/layout_app_bar_main"
+                android:layout_width="match_parent"
                 android:layout_height="wrap_content"
                 android:layout_marginTop="20dp"
-                android:letterSpacing="0.05"
-                android:text="User"
-                android:textColor="@color/white"
-                android:textSize="20sp"
-                android:textStyle="bold"
-                app:layout_constraintEnd_toEndOf="parent"
-                app:layout_constraintStart_toStartOf="parent"
                 app:layout_constraintTop_toTopOf="parent" />
-
-            <!-- Logout Button -->
-            <ImageButton
-                android:id="@+id/btnLogout"
-                android:layout_width="52dp"
-                android:layout_height="52dp"
-                android:layout_marginTop="8dp"
-                android:layout_marginEnd="12dp"
-                android:background="?attr/selectableItemBackgroundBorderless"
-                android:contentDescription="Logout"
-                android:padding="12dp"
-                android:src="@drawable/ic_lock" 
-                app:layout_constraintEnd_toEndOf="parent"
-                app:layout_constraintTop_toTopOf="parent"
-                app:tint="@color/white" />
-            <!-- Using ic_lock as exit icon placeholder if ExitToApp not available as drawable -->
 
             <!-- Logo (Overlapping Header) -->
             <ImageView
