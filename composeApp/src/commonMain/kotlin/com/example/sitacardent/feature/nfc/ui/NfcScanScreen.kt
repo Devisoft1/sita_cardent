@@ -264,50 +264,34 @@ fun NfcScanScreen(
                             .fillMaxSize()
                             .windowInsetsPadding(WindowInsets.statusBars)
                     ) {
-                        // Back Button
-                        IconButton(
-                            onClick = onBackClick,
+                        Row(
                             modifier = Modifier
-                                .align(Alignment.TopStart)
-                                .padding(start = 12.dp, top = 8.dp)
-                                .size(52.dp)
-                                .zIndex(2f)
+                                .fillMaxWidth()
+                                .padding(horizontal = 20.dp, vertical = 12.dp),
+                            horizontalArrangement = Arrangement.SpaceBetween,
+                            verticalAlignment = Alignment.CenterVertically
                         ) {
-                            Icon(
-                                imageVector = Icons.AutoMirrored.Filled.ArrowBack,
-                                contentDescription = "Go Back",
-                                tint = Color.White,
-                                modifier = Modifier.size(28.dp)
+                            // Username title
+                            Text(
+                                text = displayName,
+                                color = Color.White,
+                                fontSize = 22.sp,
+                                fontWeight = FontWeight.Bold,
+                                letterSpacing = 0.05.sp
                             )
-                        }
 
-                        // Username title
-                        Text(
-                            text = displayName,
-                            color = Color.White,
-                            fontSize = 20.sp,
-                            fontWeight = FontWeight.Bold,
-                            letterSpacing = 0.05.sp,
-                            modifier = Modifier
-                                .align(Alignment.TopCenter)
-                                .padding(top = 20.dp)
-                        )
-
-                        // Logout Button
-                        IconButton(
-                            onClick = onBackClick, // Using onBackClick as it already handles logout logic in App.kt
-                            modifier = Modifier
-                                .align(Alignment.TopEnd)
-                                .padding(end = 12.dp, top = 8.dp)
-                                .size(52.dp)
-                                .zIndex(2f)
-                        ) {
-                            Icon(
-                                imageVector = Icons.Default.ExitToApp,
-                                contentDescription = "Logout",
-                                tint = Color.White,
-                                modifier = Modifier.size(28.dp)
-                            )
+                            // Logout Button
+                            IconButton(
+                                onClick = onBackClick, // Using onBackClick as it already handles logout logic in App.kt
+                                modifier = Modifier.size(48.dp)
+                            ) {
+                                Icon(
+                                    imageVector = Icons.Default.ExitToApp,
+                                    contentDescription = "Logout",
+                                    tint = Color.Red,
+                                    modifier = Modifier.size(28.dp)
+                                )
+                            }
                         }
                     }
                 }
