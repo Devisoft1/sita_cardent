@@ -10,6 +10,9 @@ actual object LocalStorage {
     private const val KEY_EMAIL = "user_email"
     private const val KEY_SHOP_ID = "shop_id"
     private const val KEY_LOGO_URL = "logo_url"
+    private const val KEY_REMEMBER_ME = "remember_me"
+    private const val KEY_SAVED_EMAIL = "saved_email"
+    private const val KEY_SAVED_PASSWORD = "saved_password"
 
     @Volatile
     private var prefs: SharedPreferences? = null
@@ -73,6 +76,36 @@ actual object LocalStorage {
             .remove(KEY_LOGO_URL)
             .apply()
         println("LoginDebug: LocalStorage (Android) - Auth Data Cleared")
+    }
+
+    actual fun saveRememberMe(enabled: Boolean) {
+        prefs?.edit()?.putBoolean(KEY_REMEMBER_ME, enabled)?.apply()
+    }
+
+    actual fun isRememberMe(): Boolean {
+        return prefs?.getBoolean(KEY_REMEMBER_ME, false) ?: false
+    }
+
+    actual fun saveCredentials(email: String, password: String) {
+        prefs?.edit()
+            ?.putString(KEY_SAVED_EMAIL, email)
+            ?.putString(KEY_SAVED_PASSWORD, password)
+            ?.apply()
+    }
+
+    actual fun getSavedEmail(): String? {
+        return prefs?.getString(KEY_SAVED_EMAIL, null)
+    }
+
+    actual fun getSavedPassword(): String? {
+        return prefs?.getString(KEY_SAVED_PASSWORD, null)
+    }
+
+    actual fun clearSavedCredentials() {
+        prefs?.edit()
+            ?.remove(KEY_SAVED_EMAIL)
+            ?.remove(KEY_SAVED_PASSWORD)
+            ?.apply()
     }
 }
 

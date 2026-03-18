@@ -12,4 +12,12 @@ expect object LocalStorage {
     fun getUserInfo(): Triple<String, String, Int>? // Name, Email, ShopId
     fun getLogoUrl(): String?
     fun clearAuth()
+
+    // Remember Me logic
+    fun saveRememberMe(enabled: Boolean)
+    fun isRememberMe(): Boolean
+    fun saveCredentials(email: String, password: String)
+    fun getSavedEmail(): String?
+    fun getSavedPassword(): String?
+    fun clearSavedCredentials()
 }

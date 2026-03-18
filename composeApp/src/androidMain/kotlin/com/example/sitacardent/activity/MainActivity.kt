@@ -41,9 +41,14 @@ class MainActivity : AppCompatActivity() {
         val tvForgotPassword = findViewById<TextView>(R.id.tvForgotPassword)
 
         // Pre-fill email/autofill logic?
-        // Let's use LocalStorage to pre-fill email if available (like we did in Compose)
         val lastUser = LocalStorage.getUserInfo()
-        if (lastUser != null) {
+        val isRememberMe = LocalStorage.isRememberMe()
+        cbRememberMe.isChecked = isRememberMe
+        
+        if (isRememberMe) {
+            etEmail.setText(LocalStorage.getSavedEmail() ?: "")
+            etPassword.setText(LocalStorage.getSavedPassword() ?: "")
+        } else if (lastUser != null) {
             etEmail.setText(lastUser.second)
         }
 
@@ -100,6 +105,15 @@ class MainActivity : AppCompatActivity() {
                             email = response.email,
                             shopId = response.shopId
                         )
+                        
+                        // Handle Remember Me
+                        val rememberMe = cbRememberMe.isChecked
+                        LocalStorage.saveRememberMe(rememberMe)
+                        if (rememberMe) {
+                            LocalStorage.saveCredentials(email, password)
+                        } else {
+                            LocalStorage.clearSavedCredentials()
+                        }
                         
                         // Toast.makeText(this@MainActivity, "Login Successful", Toast.LENGTH_SHORT).show()
                         navigateToNfcScanAndFinish()

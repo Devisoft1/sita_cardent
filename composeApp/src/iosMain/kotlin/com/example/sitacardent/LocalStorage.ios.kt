@@ -8,6 +8,9 @@ actual object LocalStorage {
     private const val KEY_EMAIL = "com.example.sitacardent.user_email"
     private const val KEY_SHOP_ID = "com.example.sitacardent.shop_id"
     private const val KEY_LOGO_URL = "com.example.sitacardent.logo_url"
+    private const val KEY_REMEMBER_ME = "com.example.sitacardent.remember_me"
+    private const val KEY_SAVED_EMAIL = "com.example.sitacardent.saved_email"
+    private const val KEY_SAVED_PASSWORD = "com.example.sitacardent.saved_password"
 
     actual fun saveAuth(token: String, name: String, email: String, shopId: Int, logoUrl: String?) {
         val userDefaults = NSUserDefaults.standardUserDefaults
@@ -51,6 +54,38 @@ actual object LocalStorage {
         userDefaults.removeObjectForKey(KEY_EMAIL)
         userDefaults.removeObjectForKey(KEY_SHOP_ID)
         userDefaults.removeObjectForKey(KEY_LOGO_URL)
+        userDefaults.synchronize()
+    }
+
+    actual fun saveRememberMe(enabled: Boolean) {
+        val userDefaults = NSUserDefaults.standardUserDefaults
+        userDefaults.setBool(enabled, forKey = KEY_REMEMBER_ME)
+        userDefaults.synchronize()
+    }
+
+    actual fun isRememberMe(): Boolean {
+        return NSUserDefaults.standardUserDefaults.boolForKey(KEY_REMEMBER_ME)
+    }
+
+    actual fun saveCredentials(email: String, password: String) {
+        val userDefaults = NSUserDefaults.standardUserDefaults
+        userDefaults.setObject(email, forKey = KEY_SAVED_EMAIL)
+        userDefaults.setObject(password, forKey = KEY_SAVED_PASSWORD)
+        userDefaults.synchronize()
+    }
+
+    actual fun getSavedEmail(): String? {
+        return NSUserDefaults.standardUserDefaults.stringForKey(KEY_SAVED_EMAIL)
+    }
+
+    actual fun getSavedPassword(): String? {
+        return NSUserDefaults.standardUserDefaults.stringForKey(KEY_SAVED_PASSWORD)
+    }
+
+    actual fun clearSavedCredentials() {
+        val userDefaults = NSUserDefaults.standardUserDefaults
+        userDefaults.removeObjectForKey(KEY_SAVED_EMAIL)
+        userDefaults.removeObjectForKey(KEY_SAVED_PASSWORD)
         userDefaults.synchronize()
     }
 }
