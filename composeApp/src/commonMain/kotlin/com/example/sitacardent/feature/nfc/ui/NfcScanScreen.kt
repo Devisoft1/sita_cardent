@@ -485,8 +485,10 @@ fun NfcScanScreen(
                         MemberInfoRow("Company Name", verifiedCompanyName ?: "--")
                         Spacer(Modifier.height(4.dp))
                         MemberInfoRow("Expiry Date", formatDate(memberValidity ?: "--"))
+/*
                         Spacer(Modifier.height(4.dp))
                         MemberInfoRow("Current Balance", memberCurrentTotal.toString())
+*/
                     }
                 }
             }
