@@ -279,6 +279,7 @@ fun NfcScanScreen(
         modifier = Modifier
             .fillMaxSize()
             .background(BgLight)
+            .imePadding()
     ) {
 
         Column(
@@ -408,6 +409,17 @@ fun NfcScanScreen(
                     else -> TextSecondary
                 }
             )
+
+            if (isLoading || isScanning) {
+                CircularProgressIndicator(
+                    modifier = Modifier
+                        .align(Alignment.CenterHorizontally)
+                        .padding(vertical = 8.dp)
+                        .size(40.dp),
+                    color = SitaBlue,
+                    strokeWidth = 4.dp
+                )
+            }
 
             if (apiError != null) {
                 Button(

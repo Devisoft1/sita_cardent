@@ -66,12 +66,25 @@
                 app:layout_constraintStart_toStartOf="parent"
                 app:layout_constraintTop_toBottomOf="@id/imgLogo" />
 
+            <!-- Progress Loader (Above Stop Button) -->
+            <ProgressBar
+                android:id="@+id/pbLoader"
+                android:layout_width="40dp"
+                android:layout_height="40dp"
+                android:layout_marginTop="8dp"
+                android:elevation="11dp"
+                android:indeterminateTint="@color/sita_blue"
+                android:visibility="gone"
+                app:layout_constraintEnd_toEndOf="parent"
+                app:layout_constraintStart_toStartOf="parent"
+                app:layout_constraintTop_toBottomOf="@id/tvStatus" />
+
             <!-- Stop Scanning Button -->
             <Button
                 android:id="@+id/btnStopScanning"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
-                android:layout_marginTop="8dp"
+                android:layout_marginTop="4dp"
                 android:text="Stop Scanning"
                 android:textColor="@android:color/holo_red_dark"
                 android:textStyle="bold"
@@ -79,7 +92,7 @@
                 android:visibility="gone"
                 app:layout_constraintEnd_toEndOf="parent"
                 app:layout_constraintStart_toStartOf="parent"
-                app:layout_constraintTop_toBottomOf="@id/tvStatus" />
+                app:layout_constraintTop_toBottomOf="@id/pbLoader" />
 
             <!-- Member Details Card -->
             <androidx.cardview.widget.CardView

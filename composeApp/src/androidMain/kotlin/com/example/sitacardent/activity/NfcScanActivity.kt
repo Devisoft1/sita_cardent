@@ -68,6 +68,7 @@ class NfcScanActivity : AppCompatActivity() {
     private lateinit var etAmount: TextInputEditText
     private lateinit var btnCancel: Button
     private lateinit var btnConfirm: Button
+    private lateinit var pbLoader: android.widget.ProgressBar
 
     // Current Member Data
     private var currentVerifiedMemberId: Long? = null
@@ -131,6 +132,7 @@ class NfcScanActivity : AppCompatActivity() {
         etAmount = findViewById(R.id.etAmount)
         btnCancel = findViewById(R.id.btnCancel)
         btnConfirm = findViewById(R.id.btnConfirm)
+        pbLoader = findViewById(R.id.pbLoader)
         // Note: btnBack was removed from layout_app_bar_main.xml per previous instructions
     }
     
@@ -183,6 +185,7 @@ class NfcScanActivity : AppCompatActivity() {
         currentPassword = ""
         etAmount.setText("")
         scanError = null
+        pbLoader.visibility = View.GONE
         
         cvMemberDetails.visibility = View.GONE
         cvTransaction.visibility = View.GONE
@@ -212,6 +215,7 @@ class NfcScanActivity : AppCompatActivity() {
         btnStopScanning.visibility = View.VISIBLE
         cvMemberDetails.visibility = View.GONE
         cvTransaction.visibility = View.GONE
+        pbLoader.visibility = View.VISIBLE
         enableForegroundDispatch()
         
         // Sync with Composable's 60s timeout
@@ -222,6 +226,7 @@ class NfcScanActivity : AppCompatActivity() {
     private fun stopScanning() {
         isScanning = false 
         btnStopScanning.visibility = View.GONE
+        pbLoader.visibility = View.GONE
         disableForegroundDispatch()
         timeoutHandler.removeCallbacks(timeoutRunnable)
     }
@@ -393,6 +398,7 @@ class NfcScanActivity : AppCompatActivity() {
 
     private fun onCardScanned(data: ScannedCardData) {
         showStatus("Processing...", false)
+        pbLoader.visibility = View.VISIBLE
         currentPassword = data.password
         btnStopScanning.visibility = View.GONE
 
@@ -452,6 +458,7 @@ class NfcScanActivity : AppCompatActivity() {
                         displayMemberInfo(response, data.cardMfid)
                     }
                 }.onFailure { fallbackError ->
+                    pbLoader.visibility = View.GONE
                     showStatus("Verification Failed: ${e.message}", true)
                     scanError = "Verification Failed"
                 }
@@ -465,6 +472,7 @@ class NfcScanActivity : AppCompatActivity() {
         
         cvMemberDetails.visibility = View.VISIBLE
         cvTransaction.visibility = View.VISIBLE
+        pbLoader.visibility = View.GONE
         showStatus("Card Verified successfully", false, true)
         
         tvMemberId.text = member.memberId.toString()
@@ -508,6 +516,7 @@ class NfcScanActivity : AppCompatActivity() {
         }
 
         showStatus("Processing...", false)
+        pbLoader.visibility = View.VISIBLE
         btnConfirm.isEnabled = false
 
         lifecycleScope.launch {
@@ -521,6 +530,7 @@ class NfcScanActivity : AppCompatActivity() {
                 resetState()
                 btnConfirm.isEnabled = true
             }.onFailure { e ->
+                pbLoader.visibility = View.GONE
                 showStatus("Transaction Failed: ${e.message}", true)
                 btnConfirm.isEnabled = true
             }
