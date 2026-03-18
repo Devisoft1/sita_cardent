@@ -8,12 +8,17 @@ import android.nfc.Tag
 import android.nfc.tech.MifareClassic
 import android.os.Build
 import android.os.Bundle
+import android.content.Context
 import android.util.Log
 import android.view.View
+import android.view.inputmethod.InputMethodManager
 import android.widget.Button
 import android.widget.ImageButton
 import android.widget.ImageView
+import android.widget.ScrollView
 import android.widget.TextView
+import androidx.core.view.ViewCompat
+import androidx.core.view.WindowInsetsCompat
 import coil3.load
 import coil3.request.crossfade
 import coil3.request.placeholder
@@ -55,6 +60,7 @@ class NfcScanActivity : AppCompatActivity() {
     private lateinit var imgLogo: ImageView
     private lateinit var tvStatus: TextView
     private lateinit var btnStopScanning: Button
+    private lateinit var scrollView: ScrollView
     
     // Member Details UI
     private lateinit var cvMemberDetails: View
@@ -115,24 +121,41 @@ class NfcScanActivity : AppCompatActivity() {
     
     private fun initViews() {
         val appBar = findViewById<View>(R.id.includeAppBar)
-        tvDisplayName = appBar.findViewById(R.id.tvAppBarTitle)
-        btnLogout = appBar.findViewById(R.id.btnAppBarAction)
+        tvDisplayName = appBar.findViewById<TextView>(R.id.tvAppBarTitle)
+        btnLogout = appBar.findViewById<ImageButton>(R.id.btnAppBarAction)
         
-        imgLogo = findViewById(R.id.imgLogo)
-        tvStatus = findViewById(R.id.tvStatus)
-        btnStopScanning = findViewById(R.id.btnStopScanning)
+        imgLogo = findViewById<ImageView>(R.id.imgLogo)
+        tvStatus = findViewById<TextView>(R.id.tvStatus)
+        btnStopScanning = findViewById<Button>(R.id.btnStopScanning)
         
-        cvMemberDetails = findViewById(R.id.cvMemberDetails)
-        tvMemberId = findViewById(R.id.tvMemberId)
-        tvCompanyName = findViewById(R.id.tvCompanyName)
-        tvExpiryDate = findViewById(R.id.tvExpiryDate)
-        tvCurrentBalance = findViewById(R.id.tvCurrentBalance)
+        cvMemberDetails = findViewById<View>(R.id.cvMemberDetails)
+        tvMemberId = findViewById<TextView>(R.id.tvMemberId)
+        tvCompanyName = findViewById<TextView>(R.id.tvCompanyName)
+        tvExpiryDate = findViewById<TextView>(R.id.tvExpiryDate)
+        tvCurrentBalance = findViewById<TextView>(R.id.tvCurrentBalance)
         
-        cvTransaction = findViewById(R.id.cvTransaction)
-        etAmount = findViewById(R.id.etAmount)
-        btnCancel = findViewById(R.id.btnCancel)
-        btnConfirm = findViewById(R.id.btnConfirm)
-        pbLoader = findViewById(R.id.pbLoader)
+        cvTransaction = findViewById<View>(R.id.cvTransaction)
+        etAmount = findViewById<TextInputEditText>(R.id.etAmount)
+        btnCancel = findViewById<Button>(R.id.btnCancel)
+        btnConfirm = findViewById<Button>(R.id.btnConfirm)
+        pbLoader = findViewById<android.widget.ProgressBar>(R.id.pbLoader)
+        scrollView = findViewById<ScrollView>(R.id.scrollView)
+        // Note: The ScrollView has android:id="@+id/scrollView" in activity_nfc_scan.xml
+        
+        // Handle IME insets manually because of enableEdgeToEdge()
+        ViewCompat.setOnApplyWindowInsetsListener(scrollView) { view, insets ->
+            val imeInsets = insets.getInsets(WindowInsetsCompat.Type.ime())
+            val systemBars = insets.getInsets(WindowInsetsCompat.Type.systemBars())
+            view.setPadding(0, 0, 0, imeInsets.bottom + systemBars.bottom)
+            
+            // If keyboard is appearing and amount field is focused, scroll to bottom
+            if (imeInsets.bottom > 0 && etAmount.hasFocus()) {
+                view.postDelayed({
+                    scrollView.smoothScrollTo(0, scrollView.getChildAt(0).height)
+                }, 200)
+            }
+            insets
+        }
         // Note: btnBack was removed from layout_app_bar_main.xml per previous instructions
     }
     
@@ -177,6 +200,14 @@ class NfcScanActivity : AppCompatActivity() {
         btnConfirm.setOnClickListener {
             addAmount()
         }
+
+        etAmount.setOnFocusChangeListener { _, hasFocus ->
+            if (hasFocus) {
+                scrollView.postDelayed({
+                    scrollView.smoothScrollTo(0, scrollView.getChildAt(0).height)
+                }, 300)
+            }
+        }
     }
     
     private fun resetState() {
@@ -192,6 +223,14 @@ class NfcScanActivity : AppCompatActivity() {
         btnStopScanning.visibility = View.GONE
         
         showStatus("Ready to Verify\nTap logo to scan", false)
+    }
+
+    private fun hideKeyboard() {
+        val view = this.currentFocus
+        if (view != null) {
+            val imm = getSystemService(Context.INPUT_METHOD_SERVICE) as InputMethodManager
+            imm.hideSoftInputFromWindow(view.windowToken, 0)
+        }
     }
     
     private fun showStatus(message: String, isError: Boolean = false, isSuccess: Boolean = false) {
@@ -479,6 +518,11 @@ class NfcScanActivity : AppCompatActivity() {
         tvCompanyName.text = member.companyName
         tvExpiryDate.text = formatDate(member.validity)
         tvCurrentBalance.text = member.currentTotal.toString()
+
+        // Scroll down to show the transaction card
+        scrollView.postDelayed({
+            scrollView.smoothScrollTo(0, scrollView.getChildAt(0).height)
+        }, 100)
     }
 
     private fun formatDate(dateString: String): String {
@@ -522,6 +566,7 @@ class NfcScanActivity : AppCompatActivity() {
         lifecycleScope.launch {
             val result = repository.addAmount(memberId.toString(), amount, currentVerifiedCardMfid ?: "", currentPassword)
             result.onSuccess { response ->
+                hideKeyboard()
                 showStatus("Success! New Total: ${response.newCardTotal}", false, true)
                 tvCurrentBalance.text = response.newCardTotal.toString()
                 etAmount.setText("")
