@@ -6,7 +6,10 @@ import kotlinx.serialization.Serializable
 data class VerifyMemberRequest(
     val memberId: String,
     val companyName: String,
-    val password: String
+    val password: String,
+    val card_mfid: String? = null,
+    val cardValidity: String? = null,
+    val cardType: String? = null
 )
 
 @Serializable
@@ -14,7 +17,17 @@ data class VerifyMemberResponse(
     val memberId: Long,
     val companyName: String,
     val validity: String,
-    val currentTotal: Double
+    val currentTotal: Double,
+    val globalTotal: Double? = 0.0,
+    val card_mfid: String? = null,
+    val cardValidity: String? = null,
+    val verified: Boolean? = null,
+    val message: String? = null,
+    val companyAddress: String? = null,
+    val phoneNumber: String? = null,
+    val email: String? = null,
+    val website: String? = null,
+    val whatsapp: String? = null
 )
 
 @Serializable

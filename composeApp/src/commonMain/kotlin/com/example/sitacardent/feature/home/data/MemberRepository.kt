@@ -9,6 +9,7 @@ import com.example.sitacardent.model.VerifyMemberResponse
 import io.ktor.client.HttpClient
 import io.ktor.client.call.body
 import io.ktor.client.request.get
+import io.ktor.client.request.patch
 import io.ktor.client.request.post
 import io.ktor.client.request.setBody
 import io.ktor.client.statement.bodyAsText
@@ -20,12 +21,28 @@ class MemberRepository {
     private val client: HttpClient = createHttpClient()
     private val baseUrl = "https://apisita.shanti-pos.com/api/members"
 
-    suspend fun verifyMember(memberId: String, companyName: String, password: String): Result<VerifyMemberResponse> {
+    suspend fun verifyMember(
+        memberId: String,
+        companyName: String,
+        password: String,
+        cardMfid: String? = null,
+        cardValidity: String? = null,
+        cardType: String? = null
+    ): Result<VerifyMemberResponse> {
         println("MemberRepository: Verifying Member - ID: $memberId, Company: $companyName, Password: [PROTECTED]")
         return try {
-            val response = client.post("$baseUrl/verify") {
+            val response = client.patch("$baseUrl/verify") {
                 contentType(ContentType.Application.Json)
-                setBody(VerifyMemberRequest(memberId, companyName, password))
+                setBody(
+                    VerifyMemberRequest(
+                        memberId = memberId,
+                        companyName = companyName,
+                        password = password,
+                        card_mfid = cardMfid,
+                        cardValidity = cardValidity,
+                        cardType = cardType
+                    )
+                )
             }
             
             if (response.status.value in 200..299) {

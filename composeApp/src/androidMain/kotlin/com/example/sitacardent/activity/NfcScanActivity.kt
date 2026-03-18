@@ -313,6 +313,12 @@ class NfcScanActivity : AppCompatActivity() {
                 Log.d(TAG, "Block 13 Raw: ${bytesToHex(companyBytes)}")
                 val company = decodeBlock(companyBytes)
                 Log.d(TAG, "Block 13 Decoded: '$company'")
+
+                // Read Validity from Block 14
+                val validityBytes = mifare.readBlock(14)
+                Log.d(TAG, "Block 14 Raw: ${bytesToHex(validityBytes)}")
+                val validity = decodeBlock(validityBytes)
+                Log.d(TAG, "Block 14 Decoded: '$validity'")
                 
                 // Read Password from Block 18 (Sector 4)
                 var password = ""
@@ -326,11 +332,23 @@ class NfcScanActivity : AppCompatActivity() {
                      Log.e(TAG, "Sector 4 Failed to authenticate")
                 }
 
+                // Read Card Type from Block 20 (Sector 5)
+                var cardType = ""
+                if (authenticate(mifare, 5)) {
+                     Log.d(TAG, "Sector 5 authenticated")
+                     val typeBytes = mifare.readBlock(20)
+                     Log.d(TAG, "Block 20 Raw: ${bytesToHex(typeBytes)}")
+                     cardType = decodeBlock(typeBytes)
+                     Log.d(TAG, "Block 20 Decoded: '$cardType'")
+                } else {
+                     Log.d(TAG, "Sector 5 Failed to authenticate (Might not exist on some cards)")
+                }
+
                 if (id.isNotEmpty()) {
                     val mfid = bytesToHex(tag.id)
                     Log.d(TAG, "Read Success: $id, $company, $mfid")
                     // Note: password might be empty if sector 4 failed or block 18 was empty
-                    return Result.success(ScannedCardData(id, company, mfid, password))
+                    return Result.success(ScannedCardData(id, company, mfid, password, validity, cardType))
                 } else {
                     Log.e(TAG, "Read Failed: ID is empty")
                     return Result.failure(Exception("Card is empty"))
@@ -365,21 +383,60 @@ class NfcScanActivity : AppCompatActivity() {
         btnStopScanning.visibility = View.GONE
 
         lifecycleScope.launch {
-            val result = repository.verifyMember(data.memberId, data.companyName, data.password)
+            val result = repository.verifyMember(
+                memberId = data.memberId,
+                companyName = data.companyName,
+                password = data.password,
+                cardMfid = data.cardMfid,
+                cardValidity = data.validity,
+                cardType = data.cardType
+            )
             result.onSuccess { response ->
                 displayMemberInfo(response, data.cardMfid)
             }.onFailure { e ->
-                Log.d(TAG, "Verify failed ($e), attempting fallback search")
+                Log.d(TAG, "Verify failed ($e), attempting fallback search for ID: ${data.memberId}")
                 val searchResult = repository.getMemberById(data.memberId)
                 
                 searchResult.onSuccess { member ->
-                    val response = VerifyMemberResponse(
-                        memberId = member.memberId ?: 0,
-                        companyName = member.companyName ?: "",
-                        validity = member.validity ?: "",
-                        currentTotal = member.total ?: 0.0
-                    )
-                    displayMemberInfo(response, data.cardMfid)
+                    Log.d(TAG, "Search success: ${member.companyName}")
+                    
+                    // If the name from search is different (likely full vs truncated), retry verification
+                    if (member.companyName != null && member.companyName != data.companyName) {
+                        Log.d(TAG, "Retrying verification with full name: ${member.companyName}")
+                        lifecycleScope.launch {
+                            val retryResult = repository.verifyMember(
+                                memberId = data.memberId,
+                                companyName = member.companyName,
+                                password = data.password,
+                                cardMfid = data.cardMfid,
+                                cardValidity = data.validity,
+                                cardType = data.cardType
+                            )
+                            retryResult.onSuccess { retryResponse ->
+                                Log.d(TAG, "Retry verification success!")
+                                displayMemberInfo(retryResponse, data.cardMfid)
+                            }.onFailure { retryError ->
+                                Log.e(TAG, "Retry verification failed: ${retryError.message}")
+                                // If retry also fails, just display what we have from search (linkage won't work)
+                                val response = VerifyMemberResponse(
+                                    memberId = member.memberId,
+                                    companyName = member.companyName,
+                                    validity = member.validity ?: "",
+                                    currentTotal = member.total ?: 0.0
+                                )
+                                displayMemberInfo(response, data.cardMfid)
+                            }
+                        }
+                    } else {
+                        // Names match or search name is null, just show info
+                        val response = VerifyMemberResponse(
+                            memberId = member.memberId,
+                            companyName = member.companyName ?: "",
+                            validity = member.validity ?: "",
+                            currentTotal = member.total ?: 0.0
+                        )
+                        displayMemberInfo(response, data.cardMfid)
+                    }
                 }.onFailure { fallbackError ->
                     showStatus("Verification Failed: ${e.message}", true)
                     scanError = "Verification Failed"

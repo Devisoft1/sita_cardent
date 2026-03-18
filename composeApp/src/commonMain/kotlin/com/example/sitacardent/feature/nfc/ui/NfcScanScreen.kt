@@ -39,7 +39,9 @@ data class ScannedCardData(
     val memberId: String,
     val companyName: String,
     val cardMfid: String,
-    val password: String
+    val password: String,
+    val validity: String = "",
+    val cardType: String = ""
 )
 
 @OptIn(ExperimentalFoundationApi::class)
@@ -117,7 +119,9 @@ fun NfcScanScreen(
         idToVerify: String,
         companyToVerify: String,
         cardMfid: String,
-        password: String
+        password: String,
+        cardValidity: String = "",
+        cardType: String = ""
     ) {
         if (idToVerify.isBlank() || companyToVerify.isBlank()) {
             apiError = "Please enter Member ID and Company Name"
@@ -129,8 +133,15 @@ fun NfcScanScreen(
         successMessage = null
         
         scope.launch {
-            // Pass password to verifyMember
-            val result = repository.verifyMember(idToVerify, companyToVerify, password)
+            // Pass password to verifyMember along with card details
+            val result = repository.verifyMember(
+                memberId = idToVerify,
+                companyName = companyToVerify,
+                password = password,
+                cardMfid = cardMfid,
+                cardValidity = cardValidity,
+                cardType = cardType
+            )
             result.onSuccess { response ->
                 verifiedMemberId = response.memberId
                 verifiedCompanyName = response.companyName
@@ -146,19 +157,53 @@ fun NfcScanScreen(
                 val searchResult = repository.getMemberById(idToVerify)
                 
                 searchResult.onSuccess { member ->
-                    verifiedMemberId = member.memberId
-                    verifiedCompanyName = member.companyName
-                    verifiedCardMfid = cardMfid
-                    memberValidity = member.validity
-                    memberCurrentTotal = member.total ?: 0.0
-                    isLoading = false
+                    val fullName = member.companyName ?: ""
+                    
+                    // If the name from search is different (likely full vs truncated), retry verification
+                    if (fullName != companyToVerify) {
+                        println("Retrying verification with full name: $fullName")
+                        scope.launch {
+                            val retryResult = repository.verifyMember(
+                                memberId = idToVerify,
+                                companyName = fullName,
+                                password = password,
+                                cardMfid = cardMfid,
+                                cardValidity = cardValidity,
+                                cardType = cardType
+                            )
+                            retryResult.onSuccess { retryResponse ->
+                                println("Retry verification success!")
+                                verifiedMemberId = retryResponse.memberId
+                                verifiedCompanyName = retryResponse.companyName
+                                verifiedCardMfid = cardMfid
+                                memberValidity = retryResponse.validity
+                                memberCurrentTotal = retryResponse.currentTotal
+                                isLoading = false
+                            }.onFailure { retryError ->
+                                println("Retry verification failed: ${retryError.message}")
+                                // Fallback to basic info if retry fails
+                                verifiedMemberId = member.memberId
+                                verifiedCompanyName = member.companyName
+                                verifiedCardMfid = cardMfid
+                                memberValidity = member.validity
+                                memberCurrentTotal = member.total ?: 0.0
+                                isLoading = false
+                            }
+                        }
+                    } else {
+                        verifiedMemberId = member.memberId
+                        verifiedCompanyName = member.companyName
+                        verifiedCardMfid = cardMfid
+                        memberValidity = member.validity
+                        memberCurrentTotal = member.total ?: 0.0
+                        isLoading = false
+                    }
                 }.onFailure { fallbackError ->
                      apiError = "Verification Failed: ${e.message}"
                      verifiedMemberId = null
                      verifiedCardMfid = null
                      isLoading = false
                 }
-
             }
         }
     }
@@ -167,7 +212,14 @@ fun NfcScanScreen(
     LaunchedEffect(externalScannedData) {
         externalScannedData?.let { data ->
             // Pass data directly to ensure immediate verification
-            verifyMember(data.memberId, data.companyName, data.cardMfid, data.password)
+            verifyMember(
+                idToVerify = data.memberId,
+                companyToVerify = data.companyName,
+                cardMfid = data.cardMfid,
+                password = data.password,
+                cardValidity = data.validity,
+                cardType = data.cardType
+            )
             password = data.password
             onExternalDataConsumed()
         }
