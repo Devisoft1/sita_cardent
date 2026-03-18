@@ -20,5 +20,6 @@ data class LoginResponse(
     val name: String,
     val email: String,
     val image: String? = null,
+    val logo: String? = null,
     val token: String
 )

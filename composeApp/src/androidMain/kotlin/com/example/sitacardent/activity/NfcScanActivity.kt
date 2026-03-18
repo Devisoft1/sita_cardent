@@ -14,6 +14,10 @@ import android.widget.Button
 import android.widget.ImageButton
 import android.widget.ImageView
 import android.widget.TextView
+import coil3.load
+import coil3.request.crossfade
+import coil3.request.placeholder
+import coil3.request.error
 import androidx.activity.enableEdgeToEdge
 import androidx.appcompat.app.AppCompatActivity
 import androidx.lifecycle.lifecycleScope
@@ -93,6 +97,16 @@ class NfcScanActivity : AppCompatActivity() {
         initViews()
         
         tvDisplayName.text = displayName
+        
+        // Load Shop Logo
+        val logoUrl = LocalStorage.getLogoUrl()
+        if (!logoUrl.isNullOrBlank()) {
+             imgLogo.load(logoUrl) {
+                 placeholder(R.drawable.sita_logo)
+                 error(R.drawable.sita_logo)
+                 crossfade(true)
+             }
+        }
         
         setupListeners()
         resetState()

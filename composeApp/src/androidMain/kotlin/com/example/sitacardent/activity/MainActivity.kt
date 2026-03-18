@@ -99,11 +99,18 @@ class MainActivity : AppCompatActivity() {
                     
                     result.onSuccess { response ->
                         // Save Auth Data
+                        val logoUrl = if (response.logo?.startsWith("/") == true) {
+                            "https://apisita.shanti-pos.com${response.logo}"
+                        } else {
+                            response.logo
+                        }
+
                         LocalStorage.saveAuth(
                             token = response.token,
                             name = response.name,
                             email = response.email,
-                            shopId = response.shopId
+                            shopId = response.shopId,
+                            logoUrl = logoUrl
                         )
                         
                         // Handle Remember Me
