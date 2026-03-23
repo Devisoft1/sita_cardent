@@ -19,7 +19,7 @@ data class LoginResponse(
     val shopId: Int,
     val name: String,
     val email: String,
-    val image: String? = null,
-    val logo: String? = null,
+    val image: List<String>? = null,
+    val logo: List<String>? = null,
     val token: String
 )

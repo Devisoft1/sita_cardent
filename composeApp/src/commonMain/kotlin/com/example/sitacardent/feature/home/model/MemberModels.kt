@@ -16,7 +16,7 @@ data class VerifyMemberRequest(
 data class VerifyMemberResponse(
     val memberId: Long,
     val companyName: String,
-    val validity: String,
+    val validity: String?,
     val currentTotal: Double,
     val globalTotal: Double? = 0.0,
     val card_mfid: String? = null,
@@ -33,7 +33,7 @@ data class VerifyMemberResponse(
 @Serializable
 data class AddAmountRequest(
     val memberId: String,
-    val amount: Double,
+    val amount: Int,
     val card_mfid: String,
     val password: String
 )

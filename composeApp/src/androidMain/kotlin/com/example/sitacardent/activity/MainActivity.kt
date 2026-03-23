@@ -99,10 +99,11 @@ class MainActivity : AppCompatActivity() {
                     
                     result.onSuccess { response ->
                         // Save Auth Data
-                        val logoUrl = if (response.logo?.startsWith("/") == true) {
-                            "https://apisita.shanti-pos.com${response.logo}"
+                        val firstLogo = response.logo?.firstOrNull()
+                        val logoUrl = if (firstLogo?.startsWith("/") == true) {
+                            "https://apisita.shanti-pos.com$firstLogo"
                         } else {
-                            response.logo
+                            firstLogo
                         }
 
                         LocalStorage.saveAuth(

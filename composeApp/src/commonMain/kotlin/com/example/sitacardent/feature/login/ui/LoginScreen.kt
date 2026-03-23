@@ -284,7 +284,8 @@ fun LoginScreen(onLoginSuccess: (String) -> Unit) {
                                         // Implementing: Always save token for session, but maybe 'rememberMe' could implication long-term persistence? 
                                         // For now, we behave like modern apps: Always login. 
                                         // Save auth with logo URL
-                                        val logoUrl = response.image?.let { imagePath ->
+                                        val firstImage = response.image?.firstOrNull()
+                                        val logoUrl = firstImage?.let { imagePath ->
                                             if (imagePath.startsWith("http")) {
                                                 imagePath
                                             } else {

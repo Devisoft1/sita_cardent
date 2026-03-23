@@ -17,6 +17,7 @@ import android.widget.ImageButton
 import android.widget.ImageView
 import android.widget.ScrollView
 import android.widget.TextView
+import android.widget.Toast
 import androidx.core.view.ViewCompat
 import androidx.core.view.WindowInsetsCompat
 import coil3.load
@@ -49,6 +50,8 @@ class NfcScanActivity : AppCompatActivity() {
     private var isScanning = false
     private var scannedData: ScannedCardData? = null
     private var scanError: String? = null
+    private var pendingWriteAmount: String? = null
+    private var lastScannedTag: Tag? = null
     
     // NFC Adapter
     private var nfcAdapter: NfcAdapter? = null
@@ -216,11 +219,14 @@ class NfcScanActivity : AppCompatActivity() {
         currentPassword = ""
         etAmount.setText("")
         scanError = null
+        pendingWriteAmount = null
+        lastScannedTag = null
         pbLoader.visibility = View.GONE
         
         cvMemberDetails.visibility = View.GONE
         cvTransaction.visibility = View.GONE
         btnStopScanning.visibility = View.GONE
+        btnConfirm.isEnabled = true
         
         showStatus("Ready to Verify\nTap logo to scan", false)
     }
@@ -304,7 +310,21 @@ class NfcScanActivity : AppCompatActivity() {
             Log.d(TAG, "NFC Tag Detected")
             val tag = intent.getParcelableExtra<Tag>(NfcAdapter.EXTRA_TAG)
             tag?.let {
-                if (isScanning) {
+                lastScannedTag = it
+                if (pendingWriteAmount != null) {
+                    val success = writeAmountToTag(it, pendingWriteAmount!!)
+                    if (success) {
+                        runOnUiThread {
+                            Toast.makeText(this@NfcScanActivity, "Card Updated! Balance: $pendingWriteAmount", Toast.LENGTH_LONG).show()
+                            resetState()
+                        }
+                        pendingWriteAmount = null
+                    } else {
+                        runOnUiThread {
+                            showStatus("Write Failed. Please tap again.", true, false)
+                        }
+                    }
+                } else if (isScanning) {
                     val result = readMifareClassicData(it)
                     result.onSuccess { data ->
                         scannedData = data
@@ -476,25 +496,18 @@ class NfcScanActivity : AppCompatActivity() {
                                 displayMemberInfo(retryResponse, data.cardMfid)
                             }.onFailure { retryError ->
                                 Log.e(TAG, "Retry verification failed: ${retryError.message}")
-                                // If retry also fails, just display what we have from search (linkage won't work)
-                                val response = VerifyMemberResponse(
-                                    memberId = member.memberId,
-                                    companyName = member.companyName,
-                                    validity = member.validity ?: "",
-                                    currentTotal = member.total ?: 0.0
-                                )
-                                displayMemberInfo(response, data.cardMfid)
+                                pbLoader.visibility = View.GONE
+                                showStatus("Card Not Registered: ${retryError.message}", true)
+                                btnStopScanning.visibility = View.VISIBLE // Allow them to cancel
+                                isScanning = true
                             }
                         }
                     } else {
-                        // Names match or search name is null, just show info
-                        val response = VerifyMemberResponse(
-                            memberId = member.memberId,
-                            companyName = member.companyName ?: "",
-                            validity = member.validity ?: "",
-                            currentTotal = member.total ?: 0.0
-                        )
-                        displayMemberInfo(response, data.cardMfid)
+                        // Names matched, but primary verifyMember STILL failed. This implies backend genuinely rejected it (e.g. bad password or expired).
+                        pbLoader.visibility = View.GONE
+                        showStatus("Verification Rejected: ${e.message}", true)
+                        btnStopScanning.visibility = View.VISIBLE
+                        isScanning = true
                     }
                 }.onFailure { fallbackError ->
                     pbLoader.visibility = View.GONE
@@ -525,8 +538,8 @@ class NfcScanActivity : AppCompatActivity() {
         }, 100)
     }
 
-    private fun formatDate(dateString: String): String {
-        if (dateString == "--" || dateString.isBlank()) return dateString
+    private fun formatDate(dateString: String?): String {
+        if (dateString == null || dateString == "--" || dateString.isBlank()) return "--"
         return try {
             val cleanDate = dateString.split("T")[0]
             val parts = cleanDate.split("-")
@@ -548,7 +561,7 @@ class NfcScanActivity : AppCompatActivity() {
         }
         
         val amountStr = etAmount.text.toString()
-        val amount = amountStr.toDoubleOrNull()
+        val amount = amountStr.toDoubleOrNull()?.toInt()
         if (amount == null || amount <= 0) {
             showStatus("Please enter a valid amount", true)
             return
@@ -559,26 +572,87 @@ class NfcScanActivity : AppCompatActivity() {
             return
         }
 
-        showStatus("Processing...", false)
-        pbLoader.visibility = View.VISIBLE
-        btnConfirm.isEnabled = false
+        hideKeyboard()
+        val currentBalStr = tvCurrentBalance.text.toString()
+        val currentBal = currentBalStr.toDoubleOrNull() ?: 0.0
+        val expectedNewTotalStr = (currentBal + amount).toString()
 
-        lifecycleScope.launch {
-            val result = repository.addAmount(memberId.toString(), amount, currentVerifiedCardMfid ?: "", currentPassword)
-            result.onSuccess { response ->
-                hideKeyboard()
-                showStatus("Success! New Total: ${response.newCardTotal}", false, true)
-                tvCurrentBalance.text = response.newCardTotal.toString()
-                etAmount.setText("")
-                
-                delay(2000)
-                resetState()
-                btnConfirm.isEnabled = true
-            }.onFailure { e ->
-                pbLoader.visibility = View.GONE
-                showStatus("Transaction Failed: ${e.message}", true)
-                btnConfirm.isEnabled = true
+        var writeSuccess = false
+        lastScannedTag?.let { tag ->
+            writeSuccess = writeAmountToTag(tag, expectedNewTotalStr)
+        }
+
+        if (writeSuccess) {
+            Toast.makeText(this@NfcScanActivity, "Success! Card Updated. Total: $expectedNewTotalStr", Toast.LENGTH_LONG).show()
+            resetState()
+
+            lifecycleScope.launch {
+                val result = repository.addAmount(memberId.toString(), amount, currentVerifiedCardMfid ?: "", currentPassword)
+                result.onFailure {
+                    Log.e(TAG, "Background API sync failed: ${it.message}")
+                }
             }
+        } else {
+            showStatus("Processing...", false)
+            pbLoader.visibility = View.VISIBLE
+            btnConfirm.isEnabled = false
+
+            lifecycleScope.launch {
+                val result = repository.addAmount(memberId.toString(), amount, currentVerifiedCardMfid ?: "", currentPassword)
+                result.onSuccess { response ->
+                    val newAmountStr = response.newCardTotal.toString()
+                    Toast.makeText(this@NfcScanActivity, "Success! System Updated. Total: $newAmountStr", Toast.LENGTH_LONG).show()
+                    resetState()
+                }.onFailure { e ->
+                    pbLoader.visibility = View.GONE
+                    showStatus("Transaction Failed: ${e.message}", true)
+                    btnConfirm.isEnabled = true
+                }
+            }
+        }
+    }
+
+    private fun writeAmountToTag(tag: Tag, amount: String): Boolean {
+        val mifare = MifareClassic.get(tag) ?: return false
+        return try {
+            mifare.connect()
+            if (authenticate(mifare, 4)) {
+                writeHexBlock(mifare, 16, stringToHex(amount))
+                true
+            } else {
+                false
+            }
+        } catch (e: Exception) {
+            false
+        } finally {
+            try { mifare.close() } catch (e: Exception) {}
+        }
+    }
+
+    private fun stringToHex(input: String): String {
+        return input.toByteArray(Charset.forName("US-ASCII")).joinToString("") { "%02X".format(it) }
+    }
+
+    private fun hexStringToByteArray(s: String): ByteArray {
+        val len = s.length
+        val data = ByteArray(len / 2)
+        var i = 0
+        while (i < len) {
+            data[i / 2] = ((Character.digit(s[i], 16) shl 4) + Character.digit(s[i + 1], 16)).toByte()
+            i += 2
+        }
+        return data
+    }
+
+    private fun writeHexBlock(mifare: MifareClassic, blockIndex: Int, hexString: String) {
+        val bytes = ByteArray(16)
+        val paddedHex = if (hexString.length % 2 != 0) "0$hexString" else hexString
+        try {
+            val dataBytes = hexStringToByteArray(paddedHex)
+            System.arraycopy(dataBytes, 0, bytes, 0, minOf(dataBytes.size, 16))
+            mifare.writeBlock(blockIndex, bytes)
+        } catch (e: Exception) {
+            Log.e(TAG, "Write error: ${e.message}", e)
         }
     }
 }
