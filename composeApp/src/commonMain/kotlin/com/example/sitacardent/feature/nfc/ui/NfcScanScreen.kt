@@ -181,21 +181,14 @@ fun NfcScanScreen(
                                 isLoading = false
                             }.onFailure { retryError ->
                                 println("Retry verification failed: ${retryError.message}")
-                                // Fallback to basic info if retry fails
-                                verifiedMemberId = member.memberId
-                                verifiedCompanyName = member.companyName
-                                verifiedCardMfid = cardMfid
-                                memberValidity = member.validity
-                                memberCurrentTotal = member.total ?: 0.0
+                                apiError = "Card Not Registered: ${retryError.message}"
+                                verifiedMemberId = null
                                 isLoading = false
                             }
                         }
                     } else {
-                        verifiedMemberId = member.memberId
-                        verifiedCompanyName = member.companyName
-                        verifiedCardMfid = cardMfid
-                        memberValidity = member.validity
-                        memberCurrentTotal = member.total ?: 0.0
+                        apiError = "Verification Rejected: ${e.message}"
+                        verifiedMemberId = null
                         isLoading = false
                     }
                 }.onFailure { fallbackError ->
@@ -240,7 +233,7 @@ fun NfcScanScreen(
             return
         }
         
-        val amount = invoiceAmount.toDoubleOrNull()
+        val amount = invoiceAmount.toDoubleOrNull()?.toInt()
         if (amount == null || amount <= 0) {
             apiError = "Please enter a valid amount"
             return

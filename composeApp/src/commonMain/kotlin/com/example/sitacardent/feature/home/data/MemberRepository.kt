@@ -72,7 +72,7 @@ class MemberRepository {
         }
     }
 
-    suspend fun addAmount(memberId: String, amount: Double, cardMfid: String, password: String): Result<AddAmountResponse> {
+    suspend fun addAmount(memberId: String, amount: Int, cardMfid: String, password: String): Result<AddAmountResponse> {
         println("MemberRepository: Adding Amount - ID: $memberId, Amount: $amount, Card MFID: $cardMfid, Password: [PROTECTED]")
         return try {
             val response: AddAmountResponse = client.post("$baseUrl/add-amount") {
