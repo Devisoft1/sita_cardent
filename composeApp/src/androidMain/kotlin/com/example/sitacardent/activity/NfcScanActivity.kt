@@ -61,6 +61,7 @@ class NfcScanActivity : AppCompatActivity() {
     private lateinit var tvDisplayName: TextView
     private lateinit var btnLogout: ImageButton
     private lateinit var imgLogo: ImageView
+    private lateinit var imgBackgroundLogo: ImageView
     private lateinit var tvStatus: TextView
     private lateinit var btnStopScanning: Button
     private lateinit var scrollView: ScrollView
@@ -108,12 +109,20 @@ class NfcScanActivity : AppCompatActivity() {
         
         tvDisplayName.text = displayName
         
-        // Load Shop Logo
+        // Load Branding from LocalStorage
         val logoUrl = LocalStorage.getLogoUrl()
+        val imageUrl = LocalStorage.getImageUrl()
+        
         if (!logoUrl.isNullOrBlank()) {
              imgLogo.load(logoUrl) {
                  placeholder(R.drawable.sita_logo)
                  error(R.drawable.sita_logo)
+                 crossfade(true)
+             }
+        }
+        
+        if (!imageUrl.isNullOrBlank()) {
+             imgBackgroundLogo.load(imageUrl) {
                  crossfade(true)
              }
         }
@@ -128,6 +137,7 @@ class NfcScanActivity : AppCompatActivity() {
         btnLogout = appBar.findViewById<ImageButton>(R.id.btnAppBarAction)
         
         imgLogo = findViewById<ImageView>(R.id.imgLogo)
+        imgBackgroundLogo = findViewById<ImageView>(R.id.imgBackgroundLogo)
         tvStatus = findViewById<TextView>(R.id.tvStatus)
         btnStopScanning = findViewById<Button>(R.id.btnStopScanning)
         

@@ -106,12 +106,20 @@ class MainActivity : AppCompatActivity() {
                             firstLogo
                         }
 
+                        val firstImage = response.image?.firstOrNull()
+                        val imageUrl = if (firstImage?.startsWith("/") == true) {
+                            "https://apisita.shanti-pos.com$firstImage"
+                        } else {
+                            firstImage
+                        }
+
                         LocalStorage.saveAuth(
                             token = response.token,
                             name = response.name,
                             email = response.email,
                             shopId = response.shopId,
-                            logoUrl = logoUrl
+                            logoUrl = logoUrl,
+                            imageUrl = imageUrl
                         )
                         
                         // Handle Remember Me

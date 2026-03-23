@@ -25,10 +25,21 @@
                 android:id="@+id/viewHeaderBackground"
                 android:layout_width="match_parent"
                 android:layout_height="240dp"
-                android:background="@drawable/bg_header_curve" 
+                android:background="@drawable/bg_header_curve"
                 app:layout_constraintTop_toTopOf="parent" />
 
-            <!-- App Bar Included -->
+            <!-- Background Logo (from API) - Overlay on Header -->
+            <ImageView
+                android:id="@+id/imgBackgroundLogo"
+                android:layout_width="0dp"
+                android:layout_height="240dp"
+                android:alpha="1.0"
+                android:padding="20dp"
+                android:scaleType="centerInside"
+                app:layout_constraintEnd_toEndOf="parent"
+                app:layout_constraintStart_toStartOf="parent"
+                app:layout_constraintTop_toTopOf="parent" />
+
             <include
                 android:id="@+id/includeAppBar"
                 layout="@layout/layout_app_bar_main"

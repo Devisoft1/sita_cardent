@@ -10,6 +10,7 @@ actual object LocalStorage {
     private const val KEY_EMAIL = "user_email"
     private const val KEY_SHOP_ID = "shop_id"
     private const val KEY_LOGO_URL = "logo_url"
+    private const val KEY_IMAGE_URL = "image_url"
     private const val KEY_REMEMBER_ME = "remember_me"
     private const val KEY_SAVED_EMAIL = "saved_email"
     private const val KEY_SAVED_PASSWORD = "saved_password"
@@ -25,8 +26,8 @@ actual object LocalStorage {
         prefs = context.applicationContext.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
     }
 
-    actual fun saveAuth(token: String, name: String, email: String, shopId: Int, logoUrl: String?) {
-        println("LoginDebug: LocalStorage (Android) - Saving Auth Data. Name: $name, Email: $email, LogoUrl: $logoUrl")
+    actual fun saveAuth(token: String, name: String, email: String, shopId: Int, logoUrl: String?, imageUrl: String?) {
+        println("LoginDebug: LocalStorage (Android) - Saving Auth Data. Name: $name, Email: $email, LogoUrl: $logoUrl, ImageUrl: $imageUrl")
         val p = prefs ?: return
         p.edit()
             .putString(KEY_TOKEN, token)
@@ -34,6 +35,7 @@ actual object LocalStorage {
             .putString(KEY_EMAIL, email)
             .putInt(KEY_SHOP_ID, shopId)
             .putString(KEY_LOGO_URL, logoUrl)
+            .putString(KEY_IMAGE_URL, imageUrl)
             .apply()
         println("LoginDebug: LocalStorage (Android) - Data Saved Successfully")
     }
@@ -64,6 +66,12 @@ actual object LocalStorage {
         println("LoginDebug: LocalStorage (Android) - getLogoUrl called. Found: ${logoUrl != null}")
         return logoUrl
     }
+    
+    actual fun getImageUrl(): String? {
+        val imageUrl = prefs?.getString(KEY_IMAGE_URL, null)
+        println("LoginDebug: LocalStorage (Android) - getImageUrl called. Found: ${imageUrl != null}")
+        return imageUrl
+    }
 
     actual fun clearAuth() {
         println("LoginDebug: LocalStorage (Android) - Clearing Auth Data")
@@ -74,6 +82,7 @@ actual object LocalStorage {
             .remove(KEY_EMAIL)
             .remove(KEY_SHOP_ID)
             .remove(KEY_LOGO_URL)
+            .remove(KEY_IMAGE_URL)
             .apply()
         println("LoginDebug: LocalStorage (Android) - Auth Data Cleared")
     }
