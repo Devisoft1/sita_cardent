@@ -315,7 +315,7 @@ class NfcScanActivity : AppCompatActivity() {
                     val success = writeAmountToTag(it, pendingWriteAmount!!)
                     if (success) {
                         runOnUiThread {
-                            Toast.makeText(this@NfcScanActivity, "Card Updated! Balance: $pendingWriteAmount", Toast.LENGTH_LONG).show()
+                            showSuccessDialog("Card Updated! Balance: $pendingWriteAmount")
                             resetState()
                         }
                         pendingWriteAmount = null
@@ -583,7 +583,7 @@ class NfcScanActivity : AppCompatActivity() {
         }
 
         if (writeSuccess) {
-            Toast.makeText(this@NfcScanActivity, "Success! Card Updated. Total: $expectedNewTotalStr", Toast.LENGTH_LONG).show()
+            showSuccessDialog("Success! Card Updated. Total: $expectedNewTotalStr")
             resetState()
 
             lifecycleScope.launch {
@@ -601,7 +601,7 @@ class NfcScanActivity : AppCompatActivity() {
                 val result = repository.addAmount(memberId.toString(), amount, currentVerifiedCardMfid ?: "", currentPassword)
                 result.onSuccess { response ->
                     val newAmountStr = response.newCardTotal.toString()
-                    Toast.makeText(this@NfcScanActivity, "Success! System Updated. Total: $newAmountStr", Toast.LENGTH_LONG).show()
+                    showSuccessDialog("Success! System Updated. Total: $newAmountStr")
                     resetState()
                 }.onFailure { e ->
                     pbLoader.visibility = View.GONE
@@ -610,6 +610,21 @@ class NfcScanActivity : AppCompatActivity() {
                 }
             }
         }
+    }
+
+    private fun showSuccessDialog(message: String) {
+        val builder = com.google.android.material.dialog.MaterialAlertDialogBuilder(this)
+        builder.setTitle("Success")
+        builder.setMessage(message)
+        builder.setPositiveButton("OK", null)
+        
+        // Custom styling to match brand (Optional but good)
+        val dialog = builder.create()
+        dialog.show()
+        
+        // Theme color for button
+        dialog.getButton(android.app.AlertDialog.BUTTON_POSITIVE)
+            .setTextColor(android.graphics.Color.parseColor("#4CAF50"))
     }
 
     private fun writeAmountToTag(tag: Tag, amount: String): Boolean {
