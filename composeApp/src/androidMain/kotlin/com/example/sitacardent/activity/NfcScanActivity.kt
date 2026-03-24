@@ -631,7 +631,7 @@ class NfcScanActivity : AppCompatActivity() {
         showStatus("Card Verified successfully", false, true)
         
         tvMemberId.text = member.memberId.toString()
-        tvCompanyName.text = member.companyName
+        tvCompanyName.text = member.email ?: member.companyName
         tvExpiryDate.text = formatDate(member.validity)
         val balanceFormatter = java.text.DecimalFormat("#,###.00")
         tvCurrentBalance.text = balanceFormatter.format(member.currentTotal)

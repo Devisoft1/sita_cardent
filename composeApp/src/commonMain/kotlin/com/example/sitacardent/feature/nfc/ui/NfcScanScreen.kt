@@ -76,22 +76,29 @@ fun NfcScanScreen(
     var successMessage by remember { mutableStateOf<String?>(null) }
     var isLoading by remember { mutableStateOf(false) }
 
-    var imageUrl by remember { mutableStateOf(LocalStorage.getImageUrl()) }
-    var logoUrlValue by remember { mutableStateOf(LocalStorage.getLogoUrl()) }
+    fun formatUrl(url: String?): String? {
+        if (url.isNullOrBlank()) return null
+        return if (url.startsWith("http")) url else "https://apisita.shanti-pos.com$url"
+    }
+
+    var imageUrl by remember { mutableStateOf(formatUrl(LocalStorage.getImageUrl())) }
+    var logoUrlValue by remember { mutableStateOf(formatUrl(LocalStorage.getLogoUrl())) }
 
     val authRepository = remember { AuthRepository() }
 
-    var images by remember { mutableStateOf(LocalStorage.getImages()) }
+    var images by remember { mutableStateOf(LocalStorage.getImages().map { formatUrl(it)!! }) }
 
 
     LaunchedEffect(Unit) {
         val token = LocalStorage.getAuthToken()
+        val shopId = LocalStorage.getShopId()
+        val shopUId = LocalStorage.getShopUId()
+
         if (token != null) {
-            authRepository.getProfile(token).onSuccess { response ->
-                val backendImages = response.images ?: emptyList()
+            authRepository.getProfile(token, shopUId, shopId).onSuccess { response ->
+                val backendImages = response.allImages
                 val formattedImages = backendImages.map { imagePath ->
-                    if (imagePath.startsWith("http")) imagePath
-                    else "https://apisita.shanti-pos.com$imagePath"
+                    formatUrl(imagePath)!!
                 }
                 
                 if (formattedImages.isNotEmpty()) {
@@ -99,11 +106,7 @@ fun NfcScanScreen(
                     imageUrl = formattedImages.firstOrNull()
                 }
 
-                val newLogoUrl = response.logo?.let { logoPath ->
-                    if (logoPath.startsWith("http")) logoPath
-                    else "https://apisita.shanti-pos.com$logoPath"
-                }
-
+                val newLogoUrl = formatUrl(response.logo)
                 logoUrlValue = newLogoUrl
 
                 LocalStorage.saveAuth(
@@ -112,7 +115,8 @@ fun NfcScanScreen(
                     email = response.email,
                     shopId = response.shopId,
                     logoUrl = newLogoUrl,
-                    images = response.images
+                    images = response.allImages,
+                    shopUId = response._id
                 )
             }
         }
@@ -130,6 +134,7 @@ fun NfcScanScreen(
     
     var verifiedMemberId by remember { mutableStateOf<Long?>(null) }
     var verifiedCompanyName by remember { mutableStateOf<String?>(null) }
+    var verifiedEmail by remember { mutableStateOf<String?>(null) }
     var verifiedCardMfid by remember { mutableStateOf<String?>(null) }
     var memberValidity by remember { mutableStateOf<String?>(null) }
     var memberCurrentTotal by remember { mutableStateOf<Double?>(null) }
@@ -179,6 +184,7 @@ fun NfcScanScreen(
         successMessage = null
         verifiedMemberId = null
         verifiedCompanyName = null
+        verifiedEmail = null
         verifiedCardMfid = null
         memberValidity = null
         memberCurrentTotal = null
@@ -216,6 +222,7 @@ fun NfcScanScreen(
             result.onSuccess { response ->
                 verifiedMemberId = response.memberId
                 verifiedCompanyName = response.companyName
+                verifiedEmail = response.email
                 verifiedCardMfid = cardMfid
                 memberValidity = response.validity
                 println("DEBUG: API Response Validity: ${response.validity}")
@@ -246,6 +253,7 @@ fun NfcScanScreen(
                                 println("Retry verification success!")
                                 verifiedMemberId = retryResponse.memberId
                                 verifiedCompanyName = retryResponse.companyName
+                                verifiedEmail = retryResponse.email
                                 verifiedCardMfid = cardMfid
                                 memberValidity = retryResponse.validity
                                 memberCurrentTotal = retryResponse.currentTotal
@@ -584,7 +592,7 @@ fun NfcScanScreen(
 
                         MemberInfoRow("Member ID", verifiedMemberId.toString())
                         Spacer(Modifier.height(4.dp))
-                        MemberInfoRow("Company Name", verifiedCompanyName ?: "--")
+                        MemberInfoRow("Email Address", verifiedEmail ?: verifiedCompanyName ?: "--")
                         Spacer(Modifier.height(4.dp))
                         MemberInfoRow("Expiry Date", formatDate(memberValidity ?: "--"))
                         Spacer(Modifier.height(4.dp))

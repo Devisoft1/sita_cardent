@@ -341,7 +341,7 @@ fun LoginScreen(onLoginSuccess: (String) -> Unit) {
                                 scope.launch {
                                     val result = authRepository.login(email, password)
                                     result.onSuccess { response ->
-                                         val imagesUrl = response.images?.firstOrNull()?.let { imagePath ->
+                                         val imagesUrl = response.allImages.firstOrNull()?.let { imagePath ->
                                              if (imagePath.startsWith("http")) imagePath
                                              else "https://apisita.shanti-pos.com$imagePath"
                                          }
@@ -355,7 +355,8 @@ fun LoginScreen(onLoginSuccess: (String) -> Unit) {
                                              email = response.email,
                                              shopId = response.shopId,
                                              logoUrl = logoUrl,
-                                             images = response.images
+                                             images = response.allImages,
+                                             shopUId = response._id
                                          )
                                          LocalStorage.saveRememberMe(rememberMe)
                                          if (rememberMe) {

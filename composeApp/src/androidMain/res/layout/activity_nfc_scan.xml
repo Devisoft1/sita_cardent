@@ -192,7 +192,7 @@
                             android:layout_width="wrap_content"
                             android:layout_height="wrap_content"
                             android:layout_weight="1"
-                            android:text="Company Name"
+                            android:text="Email Address"
                             android:textColor="@color/text_secondary"
                             android:textSize="10sp" />
 

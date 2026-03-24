@@ -57,7 +57,7 @@ fun App() {
         } else {
             val user = LocalStorage.getUserInfo()
             NfcScanScreen(
-                userEmail = user?.first ?: "User", // user.first is name in Triple<Name, Email, ShopId>
+                userEmail = user?.second ?: "User", // user.second is email in Triple<Name, Email, ShopId>
                 onBackClick = {
                     // Treat back as logout: clear session
                     LocalStorage.clearAuth()
