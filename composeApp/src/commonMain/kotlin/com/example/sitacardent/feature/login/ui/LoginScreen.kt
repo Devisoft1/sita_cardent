@@ -138,10 +138,20 @@ fun GeometricBackground() {
 
 @Composable
 fun LoginScreen(onLoginSuccess: (String) -> Unit) {
-    // Only pre-fill email if we have it, don't fill password anymore
     val savedUser = remember { LocalStorage.getUserInfo() }
-    var email by remember { mutableStateOf(savedUser?.second ?: "") }
-    var password by remember { mutableStateOf("") }
+    val isRememberMe = remember { LocalStorage.isRememberMe() }
+    var email by remember { 
+        mutableStateOf(
+            if (isRememberMe) LocalStorage.getSavedEmail() ?: "" 
+            else savedUser?.second ?: ""
+        ) 
+    }
+    var password by remember { 
+        mutableStateOf(
+            if (isRememberMe) LocalStorage.getSavedPassword() ?: "" 
+            else ""
+        ) 
+    }
     var errorMessage by remember { mutableStateOf<String?>(null) }
     var isLoading by remember { mutableStateOf(false) }
     
@@ -162,7 +172,7 @@ fun LoginScreen(onLoginSuccess: (String) -> Unit) {
 
 
     var passwordVisible by remember { mutableStateOf(false) }
-    var rememberMe by remember { mutableStateOf(false) }
+    var rememberMe by remember { mutableStateOf(isRememberMe) }
     var showForgotPasswordDialog by remember { mutableStateOf(false) }
     
     val scope = rememberCoroutineScope()
@@ -347,6 +357,12 @@ fun LoginScreen(onLoginSuccess: (String) -> Unit) {
                                              logoUrl = logoUrl,
                                              images = response.images
                                          )
+                                         LocalStorage.saveRememberMe(rememberMe)
+                                         if (rememberMe) {
+                                             LocalStorage.saveCredentials(email, password)
+                                         } else {
+                                             LocalStorage.clearSavedCredentials()
+                                         }
 
                                         isLoading = false
                                         onLoginSuccess(response.email)
