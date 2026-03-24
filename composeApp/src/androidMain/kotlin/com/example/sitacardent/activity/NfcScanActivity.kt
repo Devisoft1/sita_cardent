@@ -103,12 +103,7 @@ class NfcScanActivity : AppCompatActivity() {
     private var currentVerifiedCardMfid: String? = null
     private var currentPassword = ""
 
-    private val timeoutHandler = android.os.Handler(android.os.Looper.getMainLooper())
-    private val timeoutRunnable = Runnable { 
-        Log.d(TAG, "NFC Scan Timeout reached.")
-        showStatus("No card detected\nPlease try again", true)
-        stopScanning()
-    }
+    private var countDownTimer: android.os.CountDownTimer? = null
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -283,7 +278,11 @@ class NfcScanActivity : AppCompatActivity() {
             // DEBUG: Simulate a successful scan
             runOnUiThread {
                 android.widget.Toast.makeText(this, "Debug: Simulating Scan...", android.widget.Toast.LENGTH_SHORT).show()
-                timeoutHandler.postDelayed({
+                countDownTimer?.cancel() // Cancel any active timer for debug
+                pbLoader.visibility = View.VISIBLE
+                btnStopScanning.visibility = View.VISIBLE
+                btnConfirm.isEnabled = false
+                android.os.Handler(android.os.Looper.getMainLooper()).postDelayed({
                     onCardScanned(ScannedCardData("1001", "Test Company Ltd", "DDOO904GHYTEC", "debugPass123"))
                     stopScanning()
                 }, 1000)
@@ -329,6 +328,7 @@ class NfcScanActivity : AppCompatActivity() {
         btnConfirm.isEnabled = true
         
         showStatus("Ready to Verify\nTap logo to scan", false)
+        countDownTimer?.cancel() // Ensure timer is cancelled on reset
     }
 
     private fun hideKeyboard() {
@@ -356,24 +356,36 @@ class NfcScanActivity : AppCompatActivity() {
         isScanning = true
         scannedData = null
         scanError = null
-        showStatus("Searching for card...\nHold it near the back", false)
-        btnStopScanning.visibility = View.VISIBLE
         cvMemberDetails.visibility = View.GONE
         cvTransaction.visibility = View.GONE
-        pbLoader.visibility = View.VISIBLE
         enableForegroundDispatch()
         
-        // Sync with Composable's 60s timeout
-        timeoutHandler.removeCallbacks(timeoutRunnable)
-        timeoutHandler.postDelayed(timeoutRunnable, 60000)
-    }
+        countDownTimer?.cancel()
+        countDownTimer = object : android.os.CountDownTimer(60000, 1000) {
+            override fun onTick(millisUntilFinished: Long) {
+                val remainingSeconds = (millisUntilFinished / 1000).toInt()
+                showStatus("Searching for card...\nHold it near the back\nTime Elapse: $remainingSeconds Seconds", false)
+            }
 
+            override fun onFinish() {
+                if (isScanning) {
+                    stopScanning()
+                    showStatus("No card detected\nPlease try again", true)
+                }
+            }
+        }.start()
+
+        pbLoader.visibility = View.VISIBLE
+        btnStopScanning.visibility = View.VISIBLE
+        btnConfirm.isEnabled = false
+    }
     private fun stopScanning() {
         isScanning = false 
         btnStopScanning.visibility = View.GONE
         pbLoader.visibility = View.GONE
+        btnConfirm.isEnabled = true
         disableForegroundDispatch()
-        timeoutHandler.removeCallbacks(timeoutRunnable)
+        countDownTimer?.cancel()
     }
 
     private fun enableForegroundDispatch() {
@@ -692,7 +704,7 @@ class NfcScanActivity : AppCompatActivity() {
         if (writeSuccess) {
             val balanceFormatter = java.text.DecimalFormat("#,###.00")
             val formattedTotal = try { balanceFormatter.format(expectedNewTotalStr.toDouble()) } catch(e: Exception) { expectedNewTotalStr }
-            showSuccessDialog("transaction of current card of rs $amount completed")
+            showSuccessDialog("transaction of rs $amount completed")
             resetState()
 
 
@@ -712,7 +724,7 @@ class NfcScanActivity : AppCompatActivity() {
                 result.onSuccess { response ->
                     val balanceFormatter = java.text.DecimalFormat("#,###.00")
                     val formattedTotal = balanceFormatter.format(response.newCardTotal)
-                    showSuccessDialog("transaction of current card of rs $amount completed")
+                    showSuccessDialog("transaction of rs $amount completed")
                     resetState()
 
                 }.onFailure { e ->

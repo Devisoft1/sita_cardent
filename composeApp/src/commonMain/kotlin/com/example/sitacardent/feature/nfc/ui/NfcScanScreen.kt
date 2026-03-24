@@ -147,14 +147,19 @@ fun NfcScanScreen(
     val amountFocusRequester = remember { FocusRequester() }
 
     var isTimeout by remember { mutableStateOf(false) }
+    var remainingSeconds by remember { mutableStateOf(60) }
 
-    // Timeout logic: Stop scanning after 1 minute
+    // Timeout logic: Stop scanning after 1 minute with countdown
     LaunchedEffect(isScanning) {
         if (isScanning) {
             isTimeout = false
-            delay(60_000L) // 1 minute
-            // Reset appropriate state
-            if (isScanning) {
+            remainingSeconds = 60
+            while (remainingSeconds > 0 && isScanning) {
+                delay(1000L)
+                remainingSeconds--
+            }
+            // If still scanning after 60s, it's a timeout
+            if (isScanning && remainingSeconds <= 0) {
                 if (isExternalScanning == null) {
                     isScanningInternal = false
                 }
@@ -330,7 +335,7 @@ fun NfcScanScreen(
         scope.launch {
             val result = repository.addAmount(verifiedMemberId.toString(), amount, verifiedCardMfid ?: "", password)
             result.onSuccess { response ->
-                successMessage = "transaction of current card of rs $amount completed"
+                successMessage = "transaction of rs $amount completed"
                 memberCurrentTotal = response.newCardTotal
                 invoiceAmount = ""
                 password = ""
@@ -492,7 +497,7 @@ fun NfcScanScreen(
                     successMessage != null -> "Transaction Successful"
                     apiError != null -> apiError ?: "Error"
                     isTimeout -> "No card detected\nPlease try again"
-                    isScanning -> "Searching for card...\nHold it near the back"
+                    isScanning -> "Searching for card...\nHold it near the back\nTime Elapse: $remainingSeconds Seconds"
                     else -> "Ready to Verify\nTap logo to scan"
                 },
                 modifier = Modifier
