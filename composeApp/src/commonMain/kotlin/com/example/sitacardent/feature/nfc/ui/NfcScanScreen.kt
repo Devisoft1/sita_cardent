@@ -452,7 +452,7 @@ fun NfcScanScreen(
                             .clip(CircleShape)
                             .background(Color.White)
                             .border(2.dp, SitaBlue, CircleShape)
-                            .padding(24.dp),
+                            .padding(16.dp),
                         contentScale = androidx.compose.ui.layout.ContentScale.Fit,
 
                         placeholder = painterResource(Res.drawable.sita_logo),
@@ -475,7 +475,7 @@ fun NfcScanScreen(
                 },
                 modifier = Modifier
                     .fillMaxWidth()
-                    .padding(horizontal = 32.dp, vertical = 8.dp),
+                    .padding(top = 4.dp, bottom = 8.dp, start = 32.dp, end = 32.dp),
                 textAlign = TextAlign.Center,
                 fontSize = 13.sp,
                 lineHeight = 18.sp,
@@ -536,7 +536,7 @@ fun NfcScanScreen(
                 Card(
                     modifier = Modifier
                         .fillMaxWidth()
-                        .padding(horizontal = 12.dp, vertical = 8.dp),
+                        .padding(top = 4.dp, bottom = 8.dp, start = 12.dp, end = 12.dp),
                     shape = RoundedCornerShape(6.dp),
                     elevation = CardDefaults.cardElevation(3.dp),
                     border = BorderStroke(1.dp, DividerColor),
@@ -588,7 +588,7 @@ fun NfcScanScreen(
                         .padding(
                             start = 12.dp,
                             end = 12.dp,
-                            top = 12.dp,
+                            top = 8.dp,
                             bottom = 32.dp
                         ),
                     shape = RoundedCornerShape(6.dp),
