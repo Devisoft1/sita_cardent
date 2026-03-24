@@ -342,11 +342,12 @@ fun NfcScanScreen(
 
             /* ================= HEADER WITH LOGO ================= */
             
-            // App Bar Row (Starting at the top)
+            // App Bar Row (on grey BgLight background, matching activity_nfc_scan.xml + layout_app_bar_main.xml)
             Box(
                 modifier = Modifier
                     .fillMaxWidth()
                     .windowInsetsPadding(WindowInsets.statusBars)
+                    .background(BgLight)
             ) {
                 Row(
                     modifier = Modifier
@@ -355,16 +356,16 @@ fun NfcScanScreen(
                     horizontalArrangement = Arrangement.SpaceBetween,
                     verticalAlignment = Alignment.CenterVertically
                 ) {
-                    // Username title matching layout_app_bar_main.xml (18sp)
+                    // Title - SitaBlue on grey background (matches layout_app_bar_main.xml tvAppBarTitle)
                     Text(
                         text = displayName,
                         color = SitaBlue,
-                        fontSize = 18.sp,
+                        fontSize = 15.sp,
                         fontWeight = FontWeight.Bold,
                         letterSpacing = 0.05.sp
                     )
 
-                    // Logout Button matching layout_app_bar_main.xml
+                    // Logout Button - red icon, matches layout_app_bar_main.xml btnAppBarAction
                     IconButton(
                         onClick = onBackClick,
                         modifier = Modifier.size(48.dp)
@@ -384,13 +385,13 @@ fun NfcScanScreen(
                 modifier = Modifier
                     .fillMaxWidth()
             ) {
-                // Header background area (240dp)
+                // Header background area (240dp) - matches imgBackgroundLogo in activity_nfc_scan.xml
                 Box(
                     modifier = Modifier
                         .fillMaxWidth()
                         .height(240.dp)
                 ) {
-                    // Header Background Image Carousel
+                    // Background image carousel - matches imgBackgroundLogo (alpha=0.3, centerCrop)
                     val pagerState = rememberPagerState(pageCount = { images.size.coerceAtLeast(1) })
 
                     LaunchedEffect(images) {
@@ -414,7 +415,7 @@ fun NfcScanScreen(
                                 contentDescription = null,
                                 modifier = Modifier.fillMaxSize(),
                                 contentScale = androidx.compose.ui.layout.ContentScale.Crop,
-                                alpha = 0.3f // More visible alpha for header area
+                                alpha = 0.3f // Matches android:alpha="0.3" in activity_nfc_scan.xml
                             )
                         }
                     }

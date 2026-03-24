@@ -174,27 +174,6 @@ fun LoginScreen(onLoginSuccess: (String) -> Unit) {
         // Modern Geometric Background
         GeometricBackground()
         
-        if (images.isNotEmpty()) {
-            HorizontalPager(
-                state = pagerState,
-                modifier = Modifier.fillMaxSize(),
-                userScrollEnabled = false
-            ) { page ->
-                val imageUrl = images.getOrNull(page)
-                if (!imageUrl.isNullOrBlank()) {
-                    val formattedUrl = if (imageUrl.startsWith("http")) imageUrl 
-                                     else "https://apisita.shanti-pos.com$imageUrl"
-                                     
-                    coil3.compose.AsyncImage(
-                        model = formattedUrl,
-                        contentDescription = null,
-                        modifier = Modifier.fillMaxSize(),
-                        contentScale = ContentScale.Crop,
-                        alpha = 0.15f // Subtle background
-                    )
-                }
-            }
-        }
 
 
         Column(
@@ -218,22 +197,28 @@ fun LoginScreen(onLoginSuccess: (String) -> Unit) {
                 color = Color.White
             ) {
                 Column(
-                    modifier = Modifier.padding(horizontal = 24.dp, vertical = 36.dp),
+                    modifier = Modifier.padding(horizontal = 24.dp, vertical = 24.dp),
                     horizontalAlignment = Alignment.CenterHorizontally
                 ) {
-                    // Logo with proper padding matching activity_login.xml
-                    Image(
-                        painter = painterResource(Res.drawable.devisoft_logo),
-                        contentDescription = "Logo",
+                    // Logo: size first, then clip for circle, then white bg, border outside, padding inside for image breathing room
+                    Box(
                         modifier = Modifier
-                            .padding(bottom = 24.dp)
-                            .size(120.dp)
-                            .clip(CircleShape)
-                            .background(Color.White)
-                            .border(1.dp, DevisoftBlue, CircleShape)
-                            .padding(12.dp),
-                        contentScale = ContentScale.Fit
-                    )
+                            .padding(bottom = 16.dp)
+                            .size(100.dp),
+                        contentAlignment = Alignment.Center
+                    ) {
+                        Image(
+                            painter = painterResource(Res.drawable.devisoft_logo),
+                            contentDescription = "Logo",
+                            modifier = Modifier
+                                .size(100.dp)
+                                .clip(CircleShape)
+                                .background(Color.White)
+                                .border(1.dp, DevisoftBlue, CircleShape)
+                                .padding(16.dp),
+                            contentScale = ContentScale.Fit
+                        )
+                    }
 
 
                     // Email Input
@@ -321,7 +306,7 @@ fun LoginScreen(onLoginSuccess: (String) -> Unit) {
                         Text(
                             text = "Remember Me",
                             color = TextSecondary,
-                            fontSize = 14.sp
+                            fontSize = 11.sp
                         )
                         
                         Spacer(Modifier.weight(1f))
@@ -329,7 +314,7 @@ fun LoginScreen(onLoginSuccess: (String) -> Unit) {
                         Text(
                             text = "Forgot Password?",
                             color = DevisoftBlue,
-                            fontSize = 14.sp,
+                            fontSize = 11.sp,
                             fontWeight = FontWeight.Bold,
                             modifier = Modifier.clickable { showForgotPasswordDialog = true }
                         )
@@ -377,7 +362,7 @@ fun LoginScreen(onLoginSuccess: (String) -> Unit) {
                         enabled = !isLoading,
                         modifier = Modifier
                             .fillMaxWidth()
-                            .height(56.dp),
+                            .height(42.dp),
                         shape = RoundedCornerShape(10.dp),
                         colors = ButtonDefaults.buttonColors(containerColor = Color.Transparent),
                         contentPadding = PaddingValues(0.dp)
@@ -404,6 +389,19 @@ fun LoginScreen(onLoginSuccess: (String) -> Unit) {
                                 )
                             }
                         }
+                    }
+
+                    Spacer(modifier = Modifier.height(16.dp))
+
+                    // Powered by DeviSoft - styled with brand colors
+                    Row(
+                        verticalAlignment = Alignment.CenterVertically,
+                        horizontalArrangement = Arrangement.Center,
+                        modifier = Modifier.fillMaxWidth()
+                    ) {
+                        Text(text = "Powered by ", color = TextSecondary, fontSize = 11.sp)
+                        Text(text = "Devi", color = DevisoftBlue, fontSize = 11.sp, fontWeight = FontWeight.Bold)
+                        Text(text = "Soft", color = DevisoftOrange, fontSize = 11.sp, fontWeight = FontWeight.Bold)
                     }
 
                 }

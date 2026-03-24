@@ -22,20 +22,7 @@ import kotlinx.coroutines.launch
 class MainActivity : AppCompatActivity() {
 
     private val authRepository = AuthRepository()
-    private lateinit var ivBackgroundCarousel: ImageView
     private var images: List<String> = emptyList()
-    private var currentImageIndex = 0
-    private val carouselHandler = android.os.Handler(android.os.Looper.getMainLooper())
-    private val carouselRunnable = object : Runnable {
-        override fun run() {
-            if (images.size > 1) {
-                currentImageIndex = (currentImageIndex + 1) % images.size
-                android.util.Log.d("LoginDebug", "MainActivity - 10 seconds passed, rotating to image index $currentImageIndex")
-                updateCarouselImage()
-            }
-            carouselHandler.postDelayed(this, 10000)
-        }
-    }
 
 
 
@@ -83,12 +70,7 @@ class MainActivity : AppCompatActivity() {
         val etEmail = findViewById<TextInputEditText>(R.id.etEmail)
         val etPassword = findViewById<TextInputEditText>(R.id.etPassword)
         val cbRememberMe = findViewById<CheckBox>(R.id.cbRememberMe)
-        ivBackgroundCarousel = findViewById(R.id.ivBackgroundCarousel)
         images = LocalStorage.getImages()
-
-        if (images.isNotEmpty()) {
-            updateCarouselImage()
-        }
 
         val btnLogin = findViewById<Button>(R.id.btnLogin)
         val tvForgotPassword = findViewById<TextView>(R.id.tvForgotPassword)
@@ -294,29 +276,5 @@ class MainActivity : AppCompatActivity() {
         startActivity(intent)
         finish()
     }
-    override fun onStart() {
-        super.onStart()
-        if (images.size > 1) {
-            carouselHandler.postDelayed(carouselRunnable, 10000)
-        }
-    }
 
-    override fun onStop() {
-        super.onStop()
-        carouselHandler.removeCallbacks(carouselRunnable)
-    }
-
-    private fun updateCarouselImage() {
-        val url = images.getOrNull(currentImageIndex)
-        android.util.Log.d("LoginDebug", "MainActivity - loading image: $url")
-        if (!url.isNullOrBlank()) {
-
-            val formattedUrl = if (url.startsWith("http")) url 
-                             else "https://apisita.shanti-pos.com$url"
-            ivBackgroundCarousel.load(formattedUrl) {
-                crossfade(true)
-                crossfade(1000)
-            }
-        }
-    }
 }
