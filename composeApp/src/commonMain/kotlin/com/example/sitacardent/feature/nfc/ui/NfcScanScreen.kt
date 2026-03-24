@@ -21,6 +21,8 @@ import com.example.sitacardent.network.AuthRepository
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.setValue
 import kotlinx.coroutines.launch
+import androidx.compose.ui.focus.FocusRequester
+import androidx.compose.ui.focus.focusRequester
 
 
 
@@ -137,8 +139,8 @@ fun NfcScanScreen(
     
     // Use external scanning state if provided, otherwise local
     val isScanning = isExternalScanning ?: isScanningInternal
+    val amountFocusRequester = remember { FocusRequester() }
 
-    
     var isTimeout by remember { mutableStateOf(false) }
 
     // Timeout logic: Stop scanning after 1 minute
@@ -160,6 +162,17 @@ fun NfcScanScreen(
 
     val displayName = userEmail.substringBefore("@")
     val showMemberInfo = verifiedMemberId != null
+
+    LaunchedEffect(showMemberInfo) {
+        if (showMemberInfo) {
+            delay(100)
+            try {
+                amountFocusRequester.requestFocus()
+            } catch (e: Exception) {
+                // Ignore focus fail
+            }
+        }
+    }
 
     fun resetState() {
         apiError = null
@@ -621,7 +634,8 @@ fun NfcScanScreen(
                             },
                             singleLine = true,
                             modifier = Modifier
-                                .fillMaxWidth(),
+                                .fillMaxWidth()
+                                .focusRequester(amountFocusRequester),
                             textStyle = TextStyle(
                                 fontSize = 14.sp,
                                 fontWeight = FontWeight.Bold
@@ -697,10 +711,26 @@ fun NfcScanScreen(
                                 }
                             }
                         }
-
                     }
                 }
             }
+
+            Spacer(modifier = Modifier.height(70.dp)) // Content padding for footer
+        }
+
+        // Powered by DeviSoft - Pinned to bottom
+        Row(
+            verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.Center,
+            modifier = Modifier
+                .fillMaxWidth()
+                .align(Alignment.BottomCenter)
+                .background(BgLight) // Ensure background is solid behind footer
+                .padding(top = 16.dp, bottom = 32.dp)
+        ) {
+            Text(text = "Powered by ", color = TextSecondary, fontSize = 11.sp)
+            Text(text = "Devi", color = SitaBlue, fontSize = 11.sp, fontWeight = FontWeight.Bold)
+            Text(text = "Soft", color = Color(0xFFF58220), fontSize = 11.sp, fontWeight = FontWeight.Bold)
         }
     }
 

@@ -636,9 +636,12 @@ class NfcScanActivity : AppCompatActivity() {
         val balanceFormatter = java.text.DecimalFormat("#,###.00")
         tvCurrentBalance.text = balanceFormatter.format(member.currentTotal)
 
-        // Scroll down to show the transaction card
+        // Scroll down to show the transaction card and focus the amount field
         scrollView.postDelayed({
             scrollView.smoothScrollTo(0, scrollView.getChildAt(0).height)
+            etAmount.requestFocus()
+            val imm = getSystemService(android.content.Context.INPUT_METHOD_SERVICE) as android.view.inputmethod.InputMethodManager
+            imm.showSoftInput(etAmount, android.view.inputmethod.InputMethodManager.SHOW_IMPLICIT)
         }, 100)
     }
 
