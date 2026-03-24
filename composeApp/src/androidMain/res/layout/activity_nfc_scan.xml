@@ -19,14 +19,14 @@
             android:layout_height="wrap_content"
             android:paddingBottom="32dp">
 
-            <!-- Gradient Header Background -->
-            <!-- The Compose gradient is 240dp tall -->
+            <!-- Background Header Area (Image Only) -->
             <View
                 android:id="@+id/viewHeaderBackground"
                 android:layout_width="match_parent"
                 android:layout_height="240dp"
-                android:background="@drawable/bg_header_curve"
+                android:background="@android:color/transparent"
                 app:layout_constraintTop_toTopOf="parent" />
+
 
             <!-- Background Logo (from API) - Overlay on Header -->
             <ImageView

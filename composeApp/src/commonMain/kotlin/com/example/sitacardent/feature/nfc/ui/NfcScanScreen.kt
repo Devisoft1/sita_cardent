@@ -295,19 +295,11 @@ fun NfcScanScreen(
                 modifier = Modifier
                     .fillMaxWidth()
             ) {
-                // Blue gradient header background matching bg_header_curve.xml
+                // Header background simplified to just the image
                 Box(
                     modifier = Modifier
                         .fillMaxWidth()
                         .height(240.dp)
-                        .background(
-                            Brush.verticalGradient(
-                                colors = listOf(
-                                    SitaBlue,
-                                    SitaBlueDark
-                                )
-                            )
-                        )
                 ) {
                     // Background Image Overlay matching imgBackgroundLogo in XML
                     val imageUrl = remember { LocalStorage.getImageUrl() }
@@ -321,9 +313,10 @@ fun NfcScanScreen(
                                 .align(Alignment.BottomEnd)
                                 .padding(top = 40.dp, end = 10.dp),
                             contentScale = androidx.compose.ui.layout.ContentScale.Fit,
-                            alpha = 0.5f // Making it more subtle as a background banner
+                            alpha = 1.0f 
                         )
                     }
+
 
                     // Content Container with Safe Area Padding
                     Box(
