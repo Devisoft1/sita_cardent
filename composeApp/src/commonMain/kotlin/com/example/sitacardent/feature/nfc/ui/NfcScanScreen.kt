@@ -316,15 +316,16 @@ fun NfcScanScreen(
                             model = imageUrl,
                             contentDescription = null,
                             modifier = Modifier
-                                .fillMaxSize()
-                                .padding(20.dp),
+                                .fillMaxWidth()
+                                .height(200.dp)
+                                .align(Alignment.BottomEnd)
+                                .padding(top = 40.dp, end = 10.dp),
                             contentScale = androidx.compose.ui.layout.ContentScale.Fit,
-                            alpha = 1.0f
+                            alpha = 0.5f // Making it more subtle as a background banner
                         )
                     }
 
                     // Content Container with Safe Area Padding
-
                     Box(
                         modifier = Modifier
                             .fillMaxSize()
@@ -337,14 +338,15 @@ fun NfcScanScreen(
                             horizontalArrangement = Arrangement.SpaceBetween,
                             verticalAlignment = Alignment.CenterVertically
                         ) {
-                            // Username title
+                            // Username title matching layout_app_bar_main.xml (18sp)
                             Text(
                                 text = displayName,
                                 color = Color.White,
-                                fontSize = 22.sp,
+                                fontSize = 18.sp,
                                 fontWeight = FontWeight.Bold,
                                 letterSpacing = 0.05.sp
                             )
+
 
                             // Logout Button matching layout_app_bar_main.xml
                             IconButton(
