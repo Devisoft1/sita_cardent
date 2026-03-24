@@ -19,26 +19,15 @@
             android:layout_height="wrap_content"
             android:paddingBottom="32dp">
 
-            <!-- Background Header Area (Image Only) -->
-            <View
-                android:id="@+id/viewHeaderBackground"
-                android:layout_width="match_parent"
-                android:layout_height="240dp"
-                android:background="@android:color/transparent"
-                app:layout_constraintTop_toTopOf="parent" />
-
-
-            <!-- Background Logo (from API) - Overlay on Header -->
             <ImageView
                 android:id="@+id/imgBackgroundLogo"
-                android:layout_width="0dp"
+                android:layout_width="match_parent"
                 android:layout_height="240dp"
-                android:alpha="1.0"
-                android:padding="20dp"
-                android:scaleType="centerInside"
-                app:layout_constraintEnd_toEndOf="parent"
+                android:alpha="0.3"
+                android:scaleType="centerCrop"
+                app:layout_constraintTop_toBottomOf="@id/includeAppBar"
                 app:layout_constraintStart_toStartOf="parent"
-                app:layout_constraintTop_toTopOf="parent" />
+                app:layout_constraintEnd_toEndOf="parent" />
 
             <include
                 android:id="@+id/includeAppBar"
@@ -49,18 +38,23 @@
                 app:layout_constraintTop_toTopOf="parent" />
 
             <!-- Logo (Overlapping Header) -->
-            <ImageView
+            <com.google.android.material.imageview.ShapeableImageView
                 android:id="@+id/imgLogo"
                 android:layout_width="180dp"
                 android:layout_height="180dp"
-                android:layout_marginTop="160dp"
+                android:layout_marginTop="150dp"
                 android:contentDescription="Tap to Scan"
                 android:elevation="10dp"
-                android:padding="4dp"
+                android:padding="24dp"
                 android:src="@drawable/sita_logo"
+                android:background="@android:color/white"
+                android:scaleType="centerInside"
+                app:shapeAppearanceOverlay="@style/CircleShapeAppearance"
+                app:strokeWidth="2dp"
+                app:strokeColor="@color/sita_blue"
                 app:layout_constraintEnd_toEndOf="parent"
                 app:layout_constraintStart_toStartOf="parent"
-                app:layout_constraintTop_toTopOf="parent" />
+                app:layout_constraintTop_toBottomOf="@id/includeAppBar" />
 
             <!-- Instruction / Status Text -->
             <TextView

@@ -9,6 +9,7 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.ExitToApp
 import androidx.compose.material3.*
+import androidx.compose.ui.draw.clip
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -341,32 +342,66 @@ fun NfcScanScreen(
 
             /* ================= HEADER WITH LOGO ================= */
             
-            // The header section with overlapping logo
+            // App Bar Row (Starting at the top)
+            Box(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .windowInsetsPadding(WindowInsets.statusBars)
+            ) {
+                Row(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(horizontal = 20.dp, vertical = 4.dp),
+                    horizontalArrangement = Arrangement.SpaceBetween,
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    // Username title matching layout_app_bar_main.xml (18sp)
+                    Text(
+                        text = displayName,
+                        color = SitaBlue,
+                        fontSize = 18.sp,
+                        fontWeight = FontWeight.Bold,
+                        letterSpacing = 0.05.sp
+                    )
+
+                    // Logout Button matching layout_app_bar_main.xml
+                    IconButton(
+                        onClick = onBackClick,
+                        modifier = Modifier.size(48.dp)
+                    ) {
+                        Icon(
+                            imageVector = Icons.Default.ExitToApp,
+                            contentDescription = "Logout",
+                            tint = Color.Red,
+                            modifier = Modifier.size(28.dp).padding(4.dp)
+                        )
+                    }
+                }
+            }
+
+            // Background & Logo area (Starting below App Bar)
             Box(
                 modifier = Modifier
                     .fillMaxWidth()
             ) {
-                // Header background simplified to just the image
+                // Header background area (240dp)
                 Box(
                     modifier = Modifier
                         .fillMaxWidth()
                         .height(240.dp)
                 ) {
-                    // Background Image Carousel
+                    // Header Background Image Carousel
                     val pagerState = rememberPagerState(pageCount = { images.size.coerceAtLeast(1) })
 
                     LaunchedEffect(images) {
                         if (images.size > 1) {
-                            println("LoginDebug: NfcScanScreen - Starting carousel auto-scroll for ${images.size} images.")
                             while (true) {
                                 delay(20000) // 20 seconds
                                 val nextPage = (pagerState.currentPage + 1) % images.size
-                                println("LoginDebug: NfcScanScreen - Auto-scrolling to page $nextPage")
                                 pagerState.animateScrollToPage(nextPage)
                             }
                         }
                     }
-
 
                     HorizontalPager(
                         state = pagerState,
@@ -377,66 +412,19 @@ fun NfcScanScreen(
                              coil3.compose.AsyncImage(
                                 model = currentImageUrl,
                                 contentDescription = null,
-                                modifier = Modifier
-                                    .fillMaxWidth()
-                                    .height(160.dp)
-                                    .align(Alignment.BottomCenter)
-                                    .padding(16.dp),
-                                contentScale = androidx.compose.ui.layout.ContentScale.Fit,
-                                alpha = 0.8f 
+                                modifier = Modifier.fillMaxSize(),
+                                contentScale = androidx.compose.ui.layout.ContentScale.Crop,
+                                alpha = 0.3f // More visible alpha for header area
                             )
-                        }
-                    }
-
-
-
-
-                    // Content Container with Safe Area Padding
-                    Box(
-                        modifier = Modifier
-                            .fillMaxSize()
-                            .windowInsetsPadding(WindowInsets.statusBars)
-                    ) {
-                        Row(
-                            modifier = Modifier
-                                .fillMaxWidth()
-                                .padding(horizontal = 20.dp, vertical = 12.dp),
-                            horizontalArrangement = Arrangement.SpaceBetween,
-                            verticalAlignment = Alignment.CenterVertically
-                        ) {
-                            // Username title matching layout_app_bar_main.xml (18sp)
-                            // Using SitaBlue for visibility on white background
-                            Text(
-                                text = displayName,
-                                color = SitaBlue,
-                                fontSize = 18.sp,
-                                fontWeight = FontWeight.Bold,
-                                letterSpacing = 0.05.sp
-                            )
-
-                            // Logout Button matching layout_app_bar_main.xml
-                            IconButton(
-                                onClick = onBackClick,
-                                modifier = Modifier.size(48.dp)
-                            ) {
-                                Icon(
-                                    imageVector = Icons.Default.ExitToApp,
-                                    contentDescription = "Logout",
-                                    tint = Color.Red,
-                                    modifier = Modifier.size(28.dp).padding(4.dp)
-                                )
-                            }
                         }
                     }
                 }
 
-
-
-                // Logo positioned to overlap header and content
+                // Logo positioned to overlap header area and content below
                 Box(
                     modifier = Modifier
                         .align(Alignment.TopCenter)
-                        .padding(top = 160.dp)
+                        .padding(top = 150.dp)
                         .size(180.dp)
                         .zIndex(10f)
                         .combinedClickable(
@@ -454,12 +442,17 @@ fun NfcScanScreen(
                             }
                         )
                 ) {
+
                     coil3.compose.AsyncImage(
                         model = logoUrlValue,
                         contentDescription = "Logo",
                         modifier = Modifier
                             .size(150.dp)
-                            .align(Alignment.Center),
+                            .align(Alignment.Center)
+                            .clip(CircleShape)
+                            .background(Color.White)
+                            .border(2.dp, SitaBlue, CircleShape)
+                            .padding(24.dp),
                         contentScale = androidx.compose.ui.layout.ContentScale.Fit,
 
                         placeholder = painterResource(Res.drawable.sita_logo),

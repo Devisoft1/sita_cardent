@@ -2,9 +2,12 @@ package com.example.sitacardent
 
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
+import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.shape.CircleShape
+import androidx.compose.ui.draw.clip
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
@@ -223,9 +226,12 @@ fun LoginScreen(onLoginSuccess: (String) -> Unit) {
                         painter = painterResource(Res.drawable.devisoft_logo),
                         contentDescription = "Logo",
                         modifier = Modifier
-                            .width(220.dp)
-                            .height(110.dp)
-                            .padding(bottom = 24.dp),
+                            .padding(bottom = 24.dp)
+                            .size(120.dp)
+                            .clip(CircleShape)
+                            .background(Color.White)
+                            .border(1.dp, DevisoftBlue, CircleShape)
+                            .padding(12.dp),
                         contentScale = ContentScale.Fit
                     )
 
