@@ -11,36 +11,63 @@ actual object LocalStorage {
     private const val KEY_REMEMBER_ME = "com.example.sitacardent.remember_me"
     private const val KEY_SAVED_EMAIL = "com.example.sitacardent.saved_email"
     private const val KEY_SAVED_PASSWORD = "com.example.sitacardent.saved_password"
+    private const val KEY_IMAGES = "com.example.sitacardent.image_urls"
+    private const val KEY_IMAGE_URL = "com.example.sitacardent.image_url"
+    private const val KEY_SHOP_UID = "com.example.sitacardent.shop_uid"
 
-    actual fun saveAuth(token: String, name: String, email: String, shopId: Int, logoUrl: String?, imageUrl: String?) {
+
+    actual fun saveAuth(token: String, name: String, email: String, shopId: Int, logoUrl: String?, images: List<String>?, shopUId: String?) {
+        println("LoginDebug: LocalStorage (iOS) - Saving Auth. Name: $name, ImagesCount: ${images?.size ?: 0}")
         val userDefaults = NSUserDefaults.standardUserDefaults
         userDefaults.setObject(token, forKey = KEY_TOKEN)
         userDefaults.setObject(name, forKey = KEY_NAME)
         userDefaults.setObject(email, forKey = KEY_EMAIL)
         userDefaults.setInteger(shopId.toLong(), forKey = KEY_SHOP_ID)
+        userDefaults.setObject(shopUId, forKey = KEY_SHOP_UID)
         
-        if (logoUrl != null) {
-            userDefaults.setObject(logoUrl, forKey = KEY_LOGO_URL)
-        } else {
-            userDefaults.removeObjectForKey(KEY_LOGO_URL)
-        }
+        // Simplified logoUrl saving
+        userDefaults.setObject(logoUrl, forKey = KEY_LOGO_URL)
         
-        if (imageUrl != null) {
-            userDefaults.setObject(imageUrl, forKey = "com.example.sitacardent.image_url")
+        // Simplified images saving
+        if (images != null && images.isNotEmpty()) {
+            userDefaults.setObject(images, forKey = KEY_IMAGES) // NSUserDefaults can store NSArray directly
+            userDefaults.setObject(images.firstOrNull(), forKey = KEY_IMAGE_URL)
         } else {
-            userDefaults.removeObjectForKey("com.example.sitacardent.image_url")
+            userDefaults.removeObjectForKey(KEY_IMAGES)
+            userDefaults.removeObjectForKey(KEY_IMAGE_URL)
         }
         
         userDefaults.synchronize()
+        println("LoginDebug: LocalStorage (iOS) - Data Saved Succesfully")
     }
+
+
 
     actual fun getAuthToken(): String? {
         return NSUserDefaults.standardUserDefaults.stringForKey(KEY_TOKEN)
     }
 
-    actual fun getImageUrl(): String? {
-        return NSUserDefaults.standardUserDefaults.stringForKey("com.example.sitacardent.image_url")
+    actual fun getShopId(): Int? {
+        val id = NSUserDefaults.standardUserDefaults.integerForKey(KEY_SHOP_ID).toInt()
+        return if (id == 0) null else id
     }
+
+    actual fun getImageUrl(): String? {
+        return NSUserDefaults.standardUserDefaults.stringForKey(KEY_IMAGE_URL)
+    }
+
+    actual fun getShopUId(): String? {
+        return NSUserDefaults.standardUserDefaults.stringForKey(KEY_SHOP_UID)
+    }
+
+
+    actual fun getImages(): List<String> {
+        val userDefaults = NSUserDefaults.standardUserDefaults
+        val images = userDefaults.arrayForKey(KEY_IMAGES)?.filterIsInstance<String>() ?: emptyList()
+        println("LoginDebug: LocalStorage (iOS) - getImages called. Count: ${images.size}")
+        return images
+    }
+
 
     actual fun getUserInfo(): Triple<String, String, Int>? {
         val userDefaults = NSUserDefaults.standardUserDefaults

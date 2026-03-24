@@ -28,6 +28,9 @@ import androidx.activity.enableEdgeToEdge
 import androidx.appcompat.app.AppCompatActivity
 import androidx.lifecycle.lifecycleScope
 import com.example.sitacardent.LocalStorage
+import com.example.sitacardent.network.AuthRepository
+import kotlinx.coroutines.launch
+
 import com.example.sitacardent.R
 import com.example.sitacardent.ScannedCardData
 import com.example.sitacardent.network.MemberRepository
@@ -66,8 +69,23 @@ class NfcScanActivity : AppCompatActivity() {
     private lateinit var btnStopScanning: Button
     private lateinit var scrollView: ScrollView
     
-    // Member Details UI
     private lateinit var cvMemberDetails: View
+
+
+    private var images: List<String> = emptyList()
+    private var currentImageIndex = 0
+    private val carouselHandler = android.os.Handler(android.os.Looper.getMainLooper())
+    private val carouselRunnable = object : Runnable {
+        override fun run() {
+            if (images.size > 1) {
+                currentImageIndex = (currentImageIndex + 1) % images.size
+                android.util.Log.d("LoginDebug", "NfcScanActivity - 10 seconds passed, rotating to image index $currentImageIndex")
+                updateCarouselImage()
+            }
+            carouselHandler.postDelayed(this, 10000) // 10 seconds
+        }
+    }
+
     private lateinit var tvMemberId: TextView
     private lateinit var tvCompanyName: TextView
     private lateinit var tvExpiryDate: TextView
@@ -98,6 +116,9 @@ class NfcScanActivity : AppCompatActivity() {
         // Use edge-to-edge for the proper full screen capability
         enableEdgeToEdge()
 
+        // Initialize LocalStorage
+        LocalStorage.init(this)
+
         setContentView(R.layout.activity_nfc_scan)
         
         nfcAdapter = NfcAdapter.getDefaultAdapter(this)
@@ -111,25 +132,94 @@ class NfcScanActivity : AppCompatActivity() {
         
         // Load Branding from LocalStorage
         val logoUrl = LocalStorage.getLogoUrl()
-        val imageUrl = LocalStorage.getImageUrl()
+        val initialImageUrl = LocalStorage.getImageUrl()
+        images = LocalStorage.getImages()
         
+        android.util.Log.d("LoginDebug", "NfcScanActivity - Stored Logo: $logoUrl")
+        android.util.Log.d("LoginDebug", "NfcScanActivity - Stored Image: $initialImageUrl")
+        android.util.Log.d("LoginDebug", "NfcScanActivity - Stored Images Count: ${images.size}")
+
         if (!logoUrl.isNullOrBlank()) {
-             imgLogo.load(logoUrl) {
+             val formattedLogo = if (logoUrl.startsWith("http")) logoUrl 
+                               else "https://apisita.shanti-pos.com$logoUrl"
+             android.util.Log.d("LoginDebug", "NfcScanActivity - Initial Logo load: $formattedLogo")
+             imgLogo.load(formattedLogo) {
                  placeholder(R.drawable.sita_logo)
                  error(R.drawable.sita_logo)
                  crossfade(true)
              }
         }
         
-        if (!imageUrl.isNullOrBlank()) {
-             imgBackgroundLogo.load(imageUrl) {
+        if (!initialImageUrl.isNullOrBlank()) {
+             val formattedUrl = if (initialImageUrl.startsWith("http")) initialImageUrl 
+                              else "https://apisita.shanti-pos.com$initialImageUrl"
+             android.util.Log.d("LoginDebug", "NfcScanActivity - Initial Image load: $formattedUrl")
+             imgBackgroundLogo.load(formattedUrl) {
                  crossfade(true)
              }
         }
         
         setupListeners()
         resetState()
+
+        // Initial carousel update
+        if (images.isNotEmpty()) {
+            updateCarouselImage()
+        }
+
+
+        // Background refresh of shop profile data (logo, images)
+        lifecycleScope.launch {
+            LocalStorage.getAuthToken()?.let { token ->
+                val authRepository = AuthRepository()
+                authRepository.getProfile(token, LocalStorage.getShopUId(), LocalStorage.getShopId()).onSuccess { response ->
+                    val newImagesUrl = response.allImages.firstOrNull()?.let { imagePath ->
+                        if (imagePath.startsWith("http")) imagePath
+                        else "https://apisita.shanti-pos.com$imagePath"
+                    }
+                    val newLogoUrl = response.logo?.let { logoPath ->
+                        if (logoPath.startsWith("http")) logoPath
+                        else "https://apisita.shanti-pos.com$logoPath"
+                    }
+
+                    if (!newLogoUrl.isNullOrBlank()) {
+                        imgLogo.load(newLogoUrl) {
+                            placeholder(R.drawable.sita_logo)
+                            error(R.drawable.sita_logo)
+                            crossfade(true)
+                        }
+                    }
+
+                    if (!newImagesUrl.isNullOrBlank()) {
+                        imgBackgroundLogo.load(newImagesUrl) {
+                            crossfade(true)
+                        }
+                    }
+                    
+                    // Update carousel list
+                    images = response.allImages
+                    if (images.isNotEmpty()) {
+                        currentImageIndex = 0
+                        updateCarouselImage()
+                    }
+
+                    // Update LocalStorage for persistence
+
+                    LocalStorage.saveAuth(
+                        token = token,
+                        name = response.name,
+                        email = response.email,
+                        shopId = response.shopId,
+                        logoUrl = newLogoUrl,
+                        images = response.allImages,
+                        shopUId = response._id ?: LocalStorage.getShopUId()
+                    )
+
+                }
+            }
+        }
     }
+
     
     private fun initViews() {
         val appBar = findViewById<View>(R.id.includeAppBar)
@@ -687,6 +777,31 @@ class NfcScanActivity : AppCompatActivity() {
             mifare.writeBlock(blockIndex, bytes)
         } catch (e: Exception) {
             Log.e(TAG, "Write error: ${e.message}", e)
+        }
+    }
+    override fun onStart() {
+        super.onStart()
+        if (images.size > 1) {
+            carouselHandler.postDelayed(carouselRunnable, 10000)
+        }
+    }
+
+    override fun onStop() {
+        super.onStop()
+        carouselHandler.removeCallbacks(carouselRunnable)
+    }
+
+    private fun updateCarouselImage() {
+        if (images.isEmpty()) return
+        val url = images.getOrNull(currentImageIndex)
+        android.util.Log.d("LoginDebug", "NfcScanActivity - loading image: $url")
+        if (!url.isNullOrBlank()) {
+            val formattedUrl = if (url.startsWith("http")) url 
+                             else "https://apisita.shanti-pos.com$url"
+            imgBackgroundLogo.load(formattedUrl) {
+                crossfade(true)
+                crossfade(1000)
+            }
         }
     }
 }

@@ -12,8 +12,15 @@ import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.foundation.pager.HorizontalPager
+import androidx.compose.foundation.pager.rememberPagerState
 import com.example.sitacardent.network.MemberRepository
+
+import com.example.sitacardent.network.AuthRepository
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.setValue
 import kotlinx.coroutines.launch
+
 
 
 import androidx.compose.ui.geometry.Offset
@@ -59,17 +66,61 @@ fun NfcScanScreen(
     onExternalDataConsumed: () -> Unit = {},
     externalScanError: String? = null,
     onExternalErrorConsumed: () -> Unit = {},
-    onLogoLongClick: (() -> Unit)? = null
+    onLogoLongClick: (() -> Unit)? = null // Added for secret settings maybe?
 ) {
+    var isScanningInternal by remember { mutableStateOf(false) }
+    var apiError by remember { mutableStateOf<String?>(null) }
+    var successMessage by remember { mutableStateOf<String?>(null) }
+    var isLoading by remember { mutableStateOf(false) }
+
+    var imageUrl by remember { mutableStateOf(LocalStorage.getImageUrl()) }
+    var logoUrlValue by remember { mutableStateOf(LocalStorage.getLogoUrl()) }
+
+    val authRepository = remember { AuthRepository() }
+
+    var images by remember { mutableStateOf(LocalStorage.getImages()) }
+
+
+    LaunchedEffect(Unit) {
+        val token = LocalStorage.getAuthToken()
+        if (token != null) {
+            authRepository.getProfile(token).onSuccess { response ->
+                val backendImages = response.images ?: emptyList()
+                val formattedImages = backendImages.map { imagePath ->
+                    if (imagePath.startsWith("http")) imagePath
+                    else "https://apisita.shanti-pos.com$imagePath"
+                }
+                
+                if (formattedImages.isNotEmpty()) {
+                    images = formattedImages
+                    imageUrl = formattedImages.firstOrNull()
+                }
+
+                val newLogoUrl = response.logo?.let { logoPath ->
+                    if (logoPath.startsWith("http")) logoPath
+                    else "https://apisita.shanti-pos.com$logoPath"
+                }
+
+                logoUrlValue = newLogoUrl
+
+                LocalStorage.saveAuth(
+                    token = token,
+                    name = response.name,
+                    email = response.email,
+                    shopId = response.shopId,
+                    logoUrl = newLogoUrl,
+                    images = response.images
+                )
+            }
+        }
+    }
+
     var invoiceAmount by remember { mutableStateOf("") }
     var password by remember { mutableStateOf("") }
     
     // API State
     val scope = rememberCoroutineScope()
     val repository = remember { MemberRepository() }
-    var isLoading by remember { mutableStateOf(false) }
-    var apiError by remember { mutableStateOf<String?>(null) }
-    var successMessage by remember { mutableStateOf<String?>(null) }
     
     // Member Data
 
@@ -84,8 +135,8 @@ fun NfcScanScreen(
 
     
     // Use external scanning state if provided, otherwise local
-    var isScanningInternal by remember { mutableStateOf(false) }
     val isScanning = isExternalScanning ?: isScanningInternal
+
     
     var isTimeout by remember { mutableStateOf(false) }
 
@@ -301,21 +352,43 @@ fun NfcScanScreen(
                         .fillMaxWidth()
                         .height(240.dp)
                 ) {
-                    // Background Image Overlay matching imgBackgroundLogo in XML
-                    val imageUrl = remember { LocalStorage.getImageUrl() }
-                    if (!imageUrl.isNullOrBlank()) {
-                         coil3.compose.AsyncImage(
-                            model = imageUrl,
-                            contentDescription = null,
-                            modifier = Modifier
-                                .fillMaxWidth()
-                                .height(200.dp)
-                                .align(Alignment.BottomEnd)
-                                .padding(top = 40.dp, end = 10.dp),
-                            contentScale = androidx.compose.ui.layout.ContentScale.Fit,
-                            alpha = 1.0f 
-                        )
+                    // Background Image Carousel
+                    val pagerState = rememberPagerState(pageCount = { images.size.coerceAtLeast(1) })
+
+                    LaunchedEffect(images) {
+                        if (images.size > 1) {
+                            println("LoginDebug: NfcScanScreen - Starting carousel auto-scroll for ${images.size} images.")
+                            while (true) {
+                                delay(20000) // 20 seconds
+                                val nextPage = (pagerState.currentPage + 1) % images.size
+                                println("LoginDebug: NfcScanScreen - Auto-scrolling to page $nextPage")
+                                pagerState.animateScrollToPage(nextPage)
+                            }
+                        }
                     }
+
+
+                    HorizontalPager(
+                        state = pagerState,
+                        modifier = Modifier.fillMaxSize()
+                    ) { page ->
+                        val currentImageUrl = images.getOrNull(page) ?: imageUrl
+                        if (!currentImageUrl.isNullOrBlank()) {
+                             coil3.compose.AsyncImage(
+                                model = currentImageUrl,
+                                contentDescription = null,
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .height(160.dp)
+                                    .align(Alignment.BottomCenter)
+                                    .padding(16.dp),
+                                contentScale = androidx.compose.ui.layout.ContentScale.Fit,
+                                alpha = 0.8f 
+                            )
+                        }
+                    }
+
+
 
 
                     // Content Container with Safe Area Padding
@@ -332,14 +405,14 @@ fun NfcScanScreen(
                             verticalAlignment = Alignment.CenterVertically
                         ) {
                             // Username title matching layout_app_bar_main.xml (18sp)
+                            // Using SitaBlue for visibility on white background
                             Text(
                                 text = displayName,
-                                color = Color.White,
+                                color = SitaBlue,
                                 fontSize = 18.sp,
                                 fontWeight = FontWeight.Bold,
                                 letterSpacing = 0.05.sp
                             )
-
 
                             // Logout Button matching layout_app_bar_main.xml
                             IconButton(
@@ -358,9 +431,8 @@ fun NfcScanScreen(
                 }
 
 
+
                 // Logo positioned to overlap header and content
-                val logoUrl = remember { LocalStorage.getLogoUrl() }
-                
                 Box(
                     modifier = Modifier
                         .align(Alignment.TopCenter)
@@ -383,11 +455,13 @@ fun NfcScanScreen(
                         )
                 ) {
                     coil3.compose.AsyncImage(
-                        model = logoUrl,
-                        contentDescription = "Tap to Scan",
+                        model = logoUrlValue,
+                        contentDescription = "Logo",
                         modifier = Modifier
-                            .fillMaxSize()
-                            .padding(4.dp),
+                            .size(150.dp)
+                            .align(Alignment.Center),
+                        contentScale = androidx.compose.ui.layout.ContentScale.Fit,
+
                         placeholder = painterResource(Res.drawable.sita_logo),
                         error = painterResource(Res.drawable.sita_logo),
                         fallback = painterResource(Res.drawable.sita_logo)

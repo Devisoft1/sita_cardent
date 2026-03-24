@@ -16,8 +16,12 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.width
+
 import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.pager.HorizontalPager
+import androidx.compose.foundation.pager.rememberPagerState
 import androidx.compose.foundation.rememberScrollState
+
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
@@ -35,6 +39,7 @@ import androidx.compose.material3.OutlinedTextFieldDefaults
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -136,6 +141,23 @@ fun LoginScreen(onLoginSuccess: (String) -> Unit) {
     var password by remember { mutableStateOf("") }
     var errorMessage by remember { mutableStateOf<String?>(null) }
     var isLoading by remember { mutableStateOf(false) }
+    
+    val images = remember { LocalStorage.getImages() }
+    val pagerState = rememberPagerState(pageCount = { images.size.coerceAtLeast(1) })
+
+    if (images.size > 1) {
+        LaunchedEffect(Unit) {
+            println("LoginDebug: LoginScreen - Starting carousel auto-scroll for ${images.size} images.")
+            while (true) {
+                kotlinx.coroutines.delay(20000)
+                val nextPage = (pagerState.currentPage + 1) % images.size
+                println("LoginDebug: LoginScreen - Auto-scrolling to page $nextPage")
+                pagerState.animateScrollToPage(nextPage)
+            }
+        }
+    }
+
+
     var passwordVisible by remember { mutableStateOf(false) }
     var rememberMe by remember { mutableStateOf(false) }
     var showForgotPasswordDialog by remember { mutableStateOf(false) }
@@ -148,6 +170,29 @@ fun LoginScreen(onLoginSuccess: (String) -> Unit) {
     ) {
         // Modern Geometric Background
         GeometricBackground()
+        
+        if (images.isNotEmpty()) {
+            HorizontalPager(
+                state = pagerState,
+                modifier = Modifier.fillMaxSize(),
+                userScrollEnabled = false
+            ) { page ->
+                val imageUrl = images.getOrNull(page)
+                if (!imageUrl.isNullOrBlank()) {
+                    val formattedUrl = if (imageUrl.startsWith("http")) imageUrl 
+                                     else "https://apisita.shanti-pos.com$imageUrl"
+                                     
+                    coil3.compose.AsyncImage(
+                        model = formattedUrl,
+                        contentDescription = null,
+                        modifier = Modifier.fillMaxSize(),
+                        contentScale = ContentScale.Crop,
+                        alpha = 0.15f // Subtle background
+                    )
+                }
+            }
+        }
+
 
         Column(
             modifier = Modifier
@@ -295,19 +340,23 @@ fun LoginScreen(onLoginSuccess: (String) -> Unit) {
                                 scope.launch {
                                     val result = authRepository.login(email, password)
                                     result.onSuccess { response ->
-                                        val firstImage = response.image?.firstOrNull()
-                                        val logoUrl = firstImage?.let { imagePath ->
-                                            if (imagePath.startsWith("http")) imagePath
-                                            else "https://apisita.shanti-pos.com$imagePath"
-                                        }
-                                        LocalStorage.saveAuth(
-                                            token = response.token,
-                                            name = response.name,
-                                            email = response.email,
-                                            shopId = response.shopId,
-                                            logoUrl = logoUrl,
-                                            imageUrl = logoUrl // Also save as imageUrl for consistency
-                                        )
+                                         val imagesUrl = response.images?.firstOrNull()?.let { imagePath ->
+                                             if (imagePath.startsWith("http")) imagePath
+                                             else "https://apisita.shanti-pos.com$imagePath"
+                                         }
+                                         val logoUrl = response.logo?.let { logoPath ->
+                                             if (logoPath.startsWith("http")) logoPath
+                                             else "https://apisita.shanti-pos.com$logoPath"
+                                         }
+                                         LocalStorage.saveAuth(
+                                             token = response.token,
+                                             name = response.name,
+                                             email = response.email,
+                                             shopId = response.shopId,
+                                             logoUrl = logoUrl,
+                                             images = response.images
+                                         )
+
                                         isLoading = false
                                         onLoginSuccess(response.email)
                                     }.onFailure { error ->

@@ -5,12 +5,16 @@ import com.example.sitacardent.model.LoginResponse
 import com.example.sitacardent.model.ForgotPasswordRequest
 import io.ktor.client.HttpClient
 import io.ktor.client.call.body
+import io.ktor.client.request.get
+import io.ktor.client.request.header
 import io.ktor.client.request.post
 import io.ktor.client.request.setBody
 import io.ktor.client.statement.bodyAsText
 import io.ktor.http.ContentType
 import io.ktor.http.contentType
+import com.example.sitacardent.model.ShopProfileResponse
 import kotlinx.serialization.json.JsonObject
+
 
 class AuthRepository {
     private val client: HttpClient = createHttpClient()
@@ -91,4 +95,75 @@ class AuthRepository {
             Result.failure(e)
         }
     }
+    suspend fun getProfile(token: String, shopUId: String? = null, shopId: Int? = null): Result<ShopProfileResponse> {
+        println("LoginDebug: AuthRepository - Fetching profile. shopId: $shopId, shopUId: $shopUId")
+        return try {
+            // Try 1: Specific endpoint with Numeric Shop ID if available (Highest priority for /api/shops/:id)
+            if (shopId != null && shopId != 0) {
+                val url = "https://apisita.shanti-pos.com/api/shops/$shopId"
+                println("LoginDebug: AuthRepository - Trying shopId URL: $url")
+                val response = client.get(url) {
+                    header("Authorization", "Bearer $token")
+                }
+                if (response.status.value in 200..299) {
+                    val body = response.body<ShopProfileResponse>()
+                    println("LoginDebug: AuthRepository - Profile Success via shopId $url! User: ${body.name}")
+                    return Result.success(body)
+                }
+                println("LoginDebug: AuthRepository - shopId URL failed with ${response.status}")
+            }
+
+            // Try 2: Specific endpoint with Shop UID if available
+            if (!shopUId.isNullOrBlank()) {
+                val urls = listOf("$baseUrl/$shopUId", "https://apisita.shanti-pos.com/api/shops/$shopUId")
+                for (url in urls) {
+                    println("LoginDebug: AuthRepository - Trying sID URL: $url")
+                    val response = client.get(url) {
+                        header("Authorization", "Bearer $token")
+                    }
+                    if (response.status.value in 200..299) {
+                        val body = response.body<ShopProfileResponse>()
+                        println("LoginDebug: AuthRepository - Profile Success via $url! User: ${body.name}")
+                        return Result.success(body)
+                    }
+                }
+            }
+
+            // Try 3: Standard "me" or "profile" endpoints
+            val fallbacks = listOf("$baseUrl/profile", "$baseUrl/me", "https://apisita.shanti-pos.com/api/shops/me")
+            for (url in fallbacks) {
+                println("LoginDebug: AuthRepository - Trying fallback: $url")
+                val response = client.get(url) {
+                    header("Authorization", "Bearer $token")
+                }
+                if (response.status.value in 200..299) {
+                    val body = response.body<ShopProfileResponse>()
+                    println("LoginDebug: AuthRepository - Profile Success via fallback $url! User: ${body.name}")
+                    return Result.success(body)
+                }
+            }
+
+            // Final fallback: try just the base URL
+            println("LoginDebug: AuthRepository - Final fallback: $baseUrl")
+            val rootResponse = client.get(baseUrl) {
+                header("Authorization", "Bearer $token")
+            }
+            
+            if (rootResponse.status.value in 200..299) {
+                val rootBody = rootResponse.body<ShopProfileResponse>()
+                println("LoginDebug: AuthRepository - Root Profile Success! User: ${rootBody.name}")
+                Result.success(rootBody)
+            } else {
+                println("LoginDebug: AuthRepository - All profile endpoints failed.")
+                Result.failure(Exception("Failed to fetch profile"))
+            }
+
+        } catch (e: Exception) {
+            println("LoginDebug: AuthRepository - Profile EXCEPTION: ${e.message}")
+            Result.failure(e)
+        }
+    }
+
 }
+
+

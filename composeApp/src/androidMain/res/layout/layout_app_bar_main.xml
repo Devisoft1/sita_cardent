@@ -13,7 +13,7 @@
         android:layout_height="wrap_content"
         android:letterSpacing="0.05"
         android:text="Title"
-        android:textColor="@color/devisoft_blue"
+        android:textColor="@color/sita_blue"
         android:textSize="18sp"
         android:textStyle="bold"
         app:layout_constraintBottom_toBottomOf="parent"

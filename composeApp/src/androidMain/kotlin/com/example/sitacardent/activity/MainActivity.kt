@@ -5,11 +5,15 @@ import android.content.Intent
 import android.os.Bundle
 import android.widget.Button
 import android.widget.CheckBox
+import android.widget.ImageView
 import android.widget.TextView
 import android.widget.Toast
 import androidx.appcompat.app.AppCompatActivity
 import androidx.lifecycle.lifecycleScope
+import coil3.load
+import coil3.request.crossfade
 import com.example.sitacardent.LocalStorage
+
 import com.example.sitacardent.R
 import com.example.sitacardent.network.AuthRepository
 import com.google.android.material.textfield.TextInputEditText
@@ -18,6 +22,22 @@ import kotlinx.coroutines.launch
 class MainActivity : AppCompatActivity() {
 
     private val authRepository = AuthRepository()
+    private lateinit var ivBackgroundCarousel: ImageView
+    private var images: List<String> = emptyList()
+    private var currentImageIndex = 0
+    private val carouselHandler = android.os.Handler(android.os.Looper.getMainLooper())
+    private val carouselRunnable = object : Runnable {
+        override fun run() {
+            if (images.size > 1) {
+                currentImageIndex = (currentImageIndex + 1) % images.size
+                android.util.Log.d("LoginDebug", "MainActivity - 10 seconds passed, rotating to image index $currentImageIndex")
+                updateCarouselImage()
+            }
+            carouselHandler.postDelayed(this, 10000)
+        }
+    }
+
+
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -30,13 +50,46 @@ class MainActivity : AppCompatActivity() {
         // Note: The original code didn't check this explicitly in onCreate for the shared logic,
         // but App.kt did. We should replicate that behavior if we want auto-login.
         if (LocalStorage.getAuthToken() != null) {
+            // Background refresh of shop profile data (logo, images)
+            lifecycleScope.launch {
+                LocalStorage.getAuthToken()?.let { token ->
+                    authRepository.getProfile(token, LocalStorage.getShopUId(), LocalStorage.getShopId()).onSuccess { response ->
+                        if (!response.name.isNullOrBlank()) {
+                            val logoUrl = response.logo?.let { logoPath ->
+                                if (logoPath.startsWith("http")) logoPath
+                                else "https://apisita.shanti-pos.com$logoPath"
+                            }
+                            LocalStorage.saveAuth(
+                                token = token,
+                                name = response.name,
+                                email = response.email,
+                                shopId = response.shopId,
+                                logoUrl = logoUrl ?: LocalStorage.getLogoUrl(),
+                                images = if (response.images.isNullOrEmpty()) LocalStorage.getImages() else response.images,
+                                shopUId = response._id
+                            )
+                            android.util.Log.d("LoginDebug", "MainActivity - Profile refreshed successfully.")
+                        }
+                    }
+
+
+                }
+            }
             navigateToNfcScanAndFinish()
             return
         }
 
+
         val etEmail = findViewById<TextInputEditText>(R.id.etEmail)
         val etPassword = findViewById<TextInputEditText>(R.id.etPassword)
-        val cbRememberMe = findViewById<CheckBox>(R.id.cbRememberMe) // We might just use this for UI preference
+        val cbRememberMe = findViewById<CheckBox>(R.id.cbRememberMe)
+        ivBackgroundCarousel = findViewById(R.id.ivBackgroundCarousel)
+        images = LocalStorage.getImages()
+
+        if (images.isNotEmpty()) {
+            updateCarouselImage()
+        }
+
         val btnLogin = findViewById<Button>(R.id.btnLogin)
         val tvForgotPassword = findViewById<TextView>(R.id.tvForgotPassword)
 
@@ -99,19 +152,19 @@ class MainActivity : AppCompatActivity() {
                     
                     result.onSuccess { response ->
                         // Save Auth Data
-                        val firstLogo = response.logo?.firstOrNull()
-                        val logoUrl = if (firstLogo?.startsWith("/") == true) {
-                            "https://apisita.shanti-pos.com$firstLogo"
+                        val logoUrl = if (response.logo?.startsWith("/") == true) {
+                            "https://apisita.shanti-pos.com${response.logo}"
                         } else {
-                            firstLogo
+                            response.logo
                         }
 
-                        val firstImage = response.image?.firstOrNull()
+                        val firstImage = response.allImages.firstOrNull()
                         val imageUrl = if (firstImage?.startsWith("/") == true) {
                             "https://apisita.shanti-pos.com$firstImage"
                         } else {
                             firstImage
                         }
+
 
                         LocalStorage.saveAuth(
                             token = response.token,
@@ -119,8 +172,11 @@ class MainActivity : AppCompatActivity() {
                             email = response.email,
                             shopId = response.shopId,
                             logoUrl = logoUrl,
-                            imageUrl = imageUrl
+                            images = response.allImages,
+                            shopUId = response._id
                         )
+
+
                         
                         // Handle Remember Me
                         val rememberMe = cbRememberMe.isChecked
@@ -237,5 +293,30 @@ class MainActivity : AppCompatActivity() {
         }
         startActivity(intent)
         finish()
+    }
+    override fun onStart() {
+        super.onStart()
+        if (images.size > 1) {
+            carouselHandler.postDelayed(carouselRunnable, 10000)
+        }
+    }
+
+    override fun onStop() {
+        super.onStop()
+        carouselHandler.removeCallbacks(carouselRunnable)
+    }
+
+    private fun updateCarouselImage() {
+        val url = images.getOrNull(currentImageIndex)
+        android.util.Log.d("LoginDebug", "MainActivity - loading image: $url")
+        if (!url.isNullOrBlank()) {
+
+            val formattedUrl = if (url.startsWith("http")) url 
+                             else "https://apisita.shanti-pos.com$url"
+            ivBackgroundCarousel.load(formattedUrl) {
+                crossfade(true)
+                crossfade(1000)
+            }
+        }
     }
 }

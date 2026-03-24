@@ -11,6 +11,10 @@ actual object LocalStorage {
     private const val KEY_SHOP_ID = "shop_id"
     private const val KEY_LOGO_URL = "logo_url"
     private const val KEY_IMAGE_URL = "image_url"
+    private const val KEY_IMAGES = "image_urls"
+    private const val KEY_SHOP_UID = "shop_uid"
+
+
     private const val KEY_REMEMBER_ME = "remember_me"
     private const val KEY_SAVED_EMAIL = "saved_email"
     private const val KEY_SAVED_PASSWORD = "saved_password"
@@ -26,24 +30,36 @@ actual object LocalStorage {
         prefs = context.applicationContext.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
     }
 
-    actual fun saveAuth(token: String, name: String, email: String, shopId: Int, logoUrl: String?, imageUrl: String?) {
-        println("LoginDebug: LocalStorage (Android) - Saving Auth Data. Name: $name, Email: $email, LogoUrl: $logoUrl, ImageUrl: $imageUrl")
+    actual fun saveAuth(token: String, name: String, email: String, shopId: Int, logoUrl: String?, images: List<String>?, shopUId: String?) {
+        println("LoginDebug: LocalStorage (Android) - Saving Auth. Name: $name, ImagesCount: ${images?.size ?: 0}")
         val p = prefs ?: return
+        val imagesString = images?.joinToString(",")
+        println("LoginDebug: LocalStorage (Android) - Images String: $imagesString")
+        println("LoginDebug: LocalStorage (Android) - Saving shopUId: $shopUId")
         p.edit()
             .putString(KEY_TOKEN, token)
             .putString(KEY_NAME, name)
             .putString(KEY_EMAIL, email)
             .putInt(KEY_SHOP_ID, shopId)
             .putString(KEY_LOGO_URL, logoUrl)
-            .putString(KEY_IMAGE_URL, imageUrl)
+            .putString(KEY_IMAGES, imagesString)
+            .putString(KEY_IMAGE_URL, images?.firstOrNull())
+            .putString(KEY_SHOP_UID, shopUId)
             .apply()
-        println("LoginDebug: LocalStorage (Android) - Data Saved Successfully")
     }
+
+
+
 
     actual fun getAuthToken(): String? {
         val token = prefs?.getString(KEY_TOKEN, null)
         println("LoginDebug: LocalStorage (Android) - getAuthToken called. Found: ${token != null}")
         return token
+    }
+
+    actual fun getShopId(): Int? {
+        val id = prefs?.getInt(KEY_SHOP_ID, 0)
+        return if (id == 0) null else id
     }
 
     actual fun getUserInfo(): Triple<String, String, Int>? {
@@ -72,6 +88,22 @@ actual object LocalStorage {
         println("LoginDebug: LocalStorage (Android) - getImageUrl called. Found: ${imageUrl != null}")
         return imageUrl
     }
+
+    actual fun getShopUId(): String? {
+        val uid = prefs?.getString(KEY_SHOP_UID, null)
+        println("LoginDebug: LocalStorage (Android) - getShopUId called. Found: ${uid != null}, UID: $uid")
+        return uid
+    }
+
+    actual fun getImages(): List<String> {
+
+        val imagesString = prefs?.getString(KEY_IMAGES, null)
+        val images = imagesString?.split(",")?.filter { it.isNotBlank() } ?: emptyList()
+        println("LoginDebug: LocalStorage (Android) - getImages called. Count: ${images.size}")
+        return images
+    }
+
+
 
     actual fun clearAuth() {
         println("LoginDebug: LocalStorage (Android) - Clearing Auth Data")

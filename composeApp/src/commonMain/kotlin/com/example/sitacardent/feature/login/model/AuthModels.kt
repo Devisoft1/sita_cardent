@@ -19,7 +19,25 @@ data class LoginResponse(
     val shopId: Int,
     val name: String,
     val email: String,
-    val image: List<String>? = null,
-    val logo: List<String>? = null,
+    val images: List<String>? = null,
+    val image: List<String>? = null, // Backend uses 'image' in /api/shops/:id
+    val logo: String? = null,
     val token: String
-)
+) {
+    val allImages: List<String> get() = images ?: image ?: emptyList()
+}
+
+@Serializable
+data class ShopProfileResponse(
+    val _id: String,
+    val shopId: Int,
+    val name: String,
+    val email: String,
+    val images: List<String>? = null,
+    val image: List<String>? = null, // Backend uses 'image' in /api/shops/:id
+    val logo: String? = null
+) {
+    val allImages: List<String> get() = images ?: image ?: emptyList()
+}
+
+
