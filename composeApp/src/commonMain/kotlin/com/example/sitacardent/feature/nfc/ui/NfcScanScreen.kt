@@ -330,7 +330,7 @@ fun NfcScanScreen(
         scope.launch {
             val result = repository.addAmount(verifiedMemberId.toString(), amount, verifiedCardMfid ?: "", password)
             result.onSuccess { response ->
-                successMessage = "Success! New Total: ${formatAmount(response.newCardTotal)}"
+                successMessage = "transaction of current card of rs $amount completed"
                 memberCurrentTotal = response.newCardTotal
                 invoiceAmount = ""
                 password = ""

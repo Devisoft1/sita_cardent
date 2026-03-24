@@ -692,7 +692,7 @@ class NfcScanActivity : AppCompatActivity() {
         if (writeSuccess) {
             val balanceFormatter = java.text.DecimalFormat("#,###.00")
             val formattedTotal = try { balanceFormatter.format(expectedNewTotalStr.toDouble()) } catch(e: Exception) { expectedNewTotalStr }
-            showSuccessDialog("Amount added successfully!\nNew Balance: $formattedTotal")
+            showSuccessDialog("transaction of current card of rs $amount completed")
             resetState()
 
 
@@ -712,7 +712,7 @@ class NfcScanActivity : AppCompatActivity() {
                 result.onSuccess { response ->
                     val balanceFormatter = java.text.DecimalFormat("#,###.00")
                     val formattedTotal = balanceFormatter.format(response.newCardTotal)
-                    showSuccessDialog("Amount added successfully!\nNew Balance: $formattedTotal")
+                    showSuccessDialog("transaction of current card of rs $amount completed")
                     resetState()
 
                 }.onFailure { e ->
