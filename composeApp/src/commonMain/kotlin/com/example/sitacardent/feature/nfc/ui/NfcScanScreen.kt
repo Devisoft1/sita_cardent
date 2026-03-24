@@ -14,6 +14,8 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import com.example.sitacardent.network.MemberRepository
 import kotlinx.coroutines.launch
+
+
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
@@ -26,6 +28,7 @@ import androidx.compose.ui.zIndex
 import org.jetbrains.compose.resources.painterResource
 import devisoft.composeapp.generated.resources.Res
 import devisoft.composeapp.generated.resources.sita_logo
+
 
 // Android color constants - matching colors.xml exactly
 private val SitaBlue = Color(0xFF2E3091)
@@ -76,6 +79,9 @@ fun NfcScanScreen(
     var verifiedCardMfid by remember { mutableStateOf<String?>(null) }
     var memberValidity by remember { mutableStateOf<String?>(null) }
     var memberCurrentTotal by remember { mutableStateOf<Double?>(null) }
+    
+    var showSuccessDialog by remember { mutableStateOf(false) }
+
     
     // Use external scanning state if provided, otherwise local
     var isScanningInternal by remember { mutableStateOf(false) }
@@ -251,11 +257,12 @@ fun NfcScanScreen(
         scope.launch {
             val result = repository.addAmount(verifiedMemberId.toString(), amount, verifiedCardMfid ?: "", password)
             result.onSuccess { response ->
-                successMessage = "Success! New Total: ${response.newCardTotal}"
+                successMessage = "Success! New Total: ${formatAmount(response.newCardTotal)}"
                 memberCurrentTotal = response.newCardTotal
                 invoiceAmount = ""
                 password = ""
                 isLoading = false
+                showSuccessDialog = true
          
                 // Wait for 2 seconds then reset the screen
                 delay(2000)
@@ -288,23 +295,36 @@ fun NfcScanScreen(
                 modifier = Modifier
                     .fillMaxWidth()
             ) {
-                // Blue gradient header background
+                // Blue gradient header background matching bg_header_curve.xml
                 Box(
                     modifier = Modifier
                         .fillMaxWidth()
                         .height(240.dp)
                         .background(
-                            Brush.linearGradient(
+                            Brush.verticalGradient(
                                 colors = listOf(
                                     SitaBlue,
                                     SitaBlueDark
-                                ),
-                                start = Offset.Zero,
-                                end = Offset(1000f, 1000f)
+                                )
                             )
                         )
                 ) {
+                    // Background Image Overlay matching imgBackgroundLogo in XML
+                    val imageUrl = remember { LocalStorage.getImageUrl() }
+                    if (!imageUrl.isNullOrBlank()) {
+                         coil3.compose.AsyncImage(
+                            model = imageUrl,
+                            contentDescription = null,
+                            modifier = Modifier
+                                .fillMaxSize()
+                                .padding(20.dp),
+                            contentScale = androidx.compose.ui.layout.ContentScale.Fit,
+                            alpha = 1.0f
+                        )
+                    }
+
                     // Content Container with Safe Area Padding
+
                     Box(
                         modifier = Modifier
                             .fillMaxSize()
@@ -326,21 +346,22 @@ fun NfcScanScreen(
                                 letterSpacing = 0.05.sp
                             )
 
-                            // Logout Button
+                            // Logout Button matching layout_app_bar_main.xml
                             IconButton(
-                                onClick = onBackClick, // Using onBackClick as it already handles logout logic in App.kt
+                                onClick = onBackClick,
                                 modifier = Modifier.size(48.dp)
                             ) {
                                 Icon(
                                     imageVector = Icons.Default.ExitToApp,
                                     contentDescription = "Logout",
                                     tint = Color.Red,
-                                    modifier = Modifier.size(28.dp)
+                                    modifier = Modifier.size(28.dp).padding(4.dp)
                                 )
                             }
                         }
                     }
                 }
+
 
                 // Logo positioned to overlap header and content
                 val logoUrl = remember { LocalStorage.getLogoUrl() }
@@ -490,10 +511,8 @@ fun NfcScanScreen(
                         MemberInfoRow("Company Name", verifiedCompanyName ?: "--")
                         Spacer(Modifier.height(4.dp))
                         MemberInfoRow("Expiry Date", formatDate(memberValidity ?: "--"))
-/*
                         Spacer(Modifier.height(4.dp))
-                        MemberInfoRow("Current Balance", memberCurrentTotal.toString())
-*/
+                        MemberInfoRow("Current Balance", formatAmount(memberCurrentTotal))
                     }
                 }
             }
@@ -591,22 +610,69 @@ fun NfcScanScreen(
                                 shape = RoundedCornerShape(6.dp),
                                 elevation = ButtonDefaults.buttonElevation(4.dp),
                                 colors = ButtonDefaults.buttonColors(
-                                    containerColor = SitaBlue
+                                    containerColor = Color.Transparent
                                 ),
+                                contentPadding = PaddingValues(0.dp),
                                 enabled = !isLoading
                             ) {
-                                Text(
-                                    text = "Confirm",
-                                    fontSize = 12.sp,
-                                    fontWeight = FontWeight.Bold
-                                )
+                                Box(
+                                    modifier = Modifier
+                                        .fillMaxSize()
+                                        .background(
+                                            Brush.horizontalGradient(
+                                                listOf(SitaBlue, SitaBlueDark)
+                                            )
+                                        ),
+                                    contentAlignment = Alignment.Center
+                                ) {
+                                    Text(
+                                        text = "Confirm",
+                                        fontSize = 12.sp,
+                                        fontWeight = FontWeight.Bold,
+                                        color = Color.White
+                                    )
+                                }
                             }
                         }
+
                     }
                 }
             }
         }
     }
+
+    if (showSuccessDialog) {
+        AlertDialog(
+            onDismissRequest = { showSuccessDialog = false },
+            title = { Text("Success") },
+            text = { Text("Amount added successfully!\nNew Balance: ${formatAmount(memberCurrentTotal)}") },
+            confirmButton = {
+                TextButton(onClick = { showSuccessDialog = false }) {
+                    Text("OK")
+                }
+            }
+        )
+    }
+}
+
+
+fun formatAmount(amount: Double?): String {
+    if (amount == null) return "0.00"
+    // Use a simple manual formatting for common module
+    val rounded = ((amount * 100.0).toLong() / 100.0)
+    val parts = rounded.toString().split(".")
+    val integerPart = parts[0]
+    var decimalPart = if (parts.size > 1) parts[1] else "00"
+    
+    // Ensure two decimal places
+    if (decimalPart.length < 2) decimalPart += "0"
+    else if (decimalPart.length > 2) decimalPart = decimalPart.substring(0, 2)
+    
+    // Add commas for thousands
+    val regex = "(\\d)(?=(\\d{3})+(?!\\d))".toRegex()
+    val formattedInteger = integerPart.replace(regex, "$1,")
+    
+    return "$formattedInteger.$decimalPart"
 }
 
 @Composable

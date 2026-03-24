@@ -325,9 +325,12 @@ class NfcScanActivity : AppCompatActivity() {
                     val success = writeAmountToTag(it, pendingWriteAmount!!)
                     if (success) {
                         runOnUiThread {
-                            showSuccessDialog("Card Updated! Balance: $pendingWriteAmount")
+                            val balanceFormatter = java.text.DecimalFormat("#,###.00")
+                            val formattedTotal = try { balanceFormatter.format(pendingWriteAmount?.toDouble() ?: 0.0) } catch(e: Exception) { pendingWriteAmount }
+                            showSuccessDialog("Amount added successfully!\nNew Balance: $formattedTotal")
                             resetState()
                         }
+
                         pendingWriteAmount = null
                     } else {
                         runOnUiThread {
@@ -540,7 +543,8 @@ class NfcScanActivity : AppCompatActivity() {
         tvMemberId.text = member.memberId.toString()
         tvCompanyName.text = member.companyName
         tvExpiryDate.text = formatDate(member.validity)
-        tvCurrentBalance.text = member.currentTotal.toString()
+        val balanceFormatter = java.text.DecimalFormat("#,###.00")
+        tvCurrentBalance.text = balanceFormatter.format(member.currentTotal)
 
         // Scroll down to show the transaction card
         scrollView.postDelayed({
@@ -593,8 +597,11 @@ class NfcScanActivity : AppCompatActivity() {
         }
 
         if (writeSuccess) {
-            showSuccessDialog("Success! Card Updated. Total: $expectedNewTotalStr")
+            val balanceFormatter = java.text.DecimalFormat("#,###.00")
+            val formattedTotal = try { balanceFormatter.format(expectedNewTotalStr.toDouble()) } catch(e: Exception) { expectedNewTotalStr }
+            showSuccessDialog("Amount added successfully!\nNew Balance: $formattedTotal")
             resetState()
+
 
             lifecycleScope.launch {
                 val result = repository.addAmount(memberId.toString(), amount, currentVerifiedCardMfid ?: "", currentPassword)
@@ -610,9 +617,11 @@ class NfcScanActivity : AppCompatActivity() {
             lifecycleScope.launch {
                 val result = repository.addAmount(memberId.toString(), amount, currentVerifiedCardMfid ?: "", currentPassword)
                 result.onSuccess { response ->
-                    val newAmountStr = response.newCardTotal.toString()
-                    showSuccessDialog("Success! System Updated. Total: $newAmountStr")
+                    val balanceFormatter = java.text.DecimalFormat("#,###.00")
+                    val formattedTotal = balanceFormatter.format(response.newCardTotal)
+                    showSuccessDialog("Amount added successfully!\nNew Balance: $formattedTotal")
                     resetState()
+
                 }.onFailure { e ->
                     pbLoader.visibility = View.GONE
                     showStatus("Transaction Failed: ${e.message}", true)

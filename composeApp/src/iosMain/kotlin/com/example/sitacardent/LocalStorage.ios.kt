@@ -12,22 +12,34 @@ actual object LocalStorage {
     private const val KEY_SAVED_EMAIL = "com.example.sitacardent.saved_email"
     private const val KEY_SAVED_PASSWORD = "com.example.sitacardent.saved_password"
 
-    actual fun saveAuth(token: String, name: String, email: String, shopId: Int, logoUrl: String?) {
+    actual fun saveAuth(token: String, name: String, email: String, shopId: Int, logoUrl: String?, imageUrl: String?) {
         val userDefaults = NSUserDefaults.standardUserDefaults
         userDefaults.setObject(token, forKey = KEY_TOKEN)
         userDefaults.setObject(name, forKey = KEY_NAME)
         userDefaults.setObject(email, forKey = KEY_EMAIL)
         userDefaults.setInteger(shopId.toLong(), forKey = KEY_SHOP_ID)
+        
         if (logoUrl != null) {
             userDefaults.setObject(logoUrl, forKey = KEY_LOGO_URL)
         } else {
             userDefaults.removeObjectForKey(KEY_LOGO_URL)
         }
+        
+        if (imageUrl != null) {
+            userDefaults.setObject(imageUrl, forKey = "com.example.sitacardent.image_url")
+        } else {
+            userDefaults.removeObjectForKey("com.example.sitacardent.image_url")
+        }
+        
         userDefaults.synchronize()
     }
 
     actual fun getAuthToken(): String? {
         return NSUserDefaults.standardUserDefaults.stringForKey(KEY_TOKEN)
+    }
+
+    actual fun getImageUrl(): String? {
+        return NSUserDefaults.standardUserDefaults.stringForKey("com.example.sitacardent.image_url")
     }
 
     actual fun getUserInfo(): Triple<String, String, Int>? {
