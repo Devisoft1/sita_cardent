@@ -89,6 +89,7 @@ class NfcScanActivity : AppCompatActivity() {
     }
 
     private lateinit var tvMemberId: TextView
+    private lateinit var tvMemberName: TextView
     private lateinit var tvCompanyName: TextView
     private lateinit var tvExpiryDate: TextView
     private lateinit var tvCurrentBalance: TextView
@@ -230,6 +231,7 @@ class NfcScanActivity : AppCompatActivity() {
         
         cvMemberDetails = findViewById<View>(R.id.cvMemberDetails)
         tvMemberId = findViewById<TextView>(R.id.tvMemberId)
+        tvMemberName = findViewById<TextView>(R.id.tvMemberName)
         tvCompanyName = findViewById<TextView>(R.id.tvCompanyName)
         tvExpiryDate = findViewById<TextView>(R.id.tvExpiryDate)
         tvCurrentBalance = findViewById<TextView>(R.id.tvCurrentBalance)
@@ -697,6 +699,7 @@ class NfcScanActivity : AppCompatActivity() {
         showStatus("Card Verified successfully", false, true)
         
         tvMemberId.text = member.memberId.toString()
+        tvMemberName.text = member.companyName ?: ""
         tvCompanyName.text = member.email ?: member.companyName
         tvExpiryDate.text = formatDate(member.validity)
         val balanceFormatter = java.text.DecimalFormat("#,###.00")
