@@ -448,10 +448,9 @@ class NfcScanActivity : AppCompatActivity() {
                     runOnUiThread {
                         stopScanning()
                         resetState()
-                        showStatus("Multiple cards detected!\nPlease try again", true)
                         com.google.android.material.dialog.MaterialAlertDialogBuilder(this)
-                            .setTitle("Multiple Cards")
-                            .setMessage("Interference detected. Please hold only one card and try again.")
+                            .setTitle("Multiple Cards Detected")
+                            .setMessage("Multiple cards detected! Please hold one card only.")
                             .setPositiveButton("OK", null)
                             .show()
                     }
@@ -464,10 +463,9 @@ class NfcScanActivity : AppCompatActivity() {
                     runOnUiThread {
                         stopScanning()
                         resetState()
-                        showStatus("Multiple cards detected!\nPlease tap only one card", true)
                         com.google.android.material.dialog.MaterialAlertDialogBuilder(this)
-                            .setTitle("Multiple Cards")
-                            .setMessage("It looks like multiple cards are near the reader. Please hold only one card and try again.")
+                            .setTitle("Multiple Cards Detected")
+                            .setMessage("Multiple cards detected! Please hold one card only.")
                             .setPositiveButton("OK", null)
                             .show()
                     }
@@ -761,7 +759,7 @@ class NfcScanActivity : AppCompatActivity() {
         if (writeSuccess) {
             val balanceFormatter = java.text.DecimalFormat("#,###.00")
             val formattedTotal = try { balanceFormatter.format(expectedNewTotalStr.toDouble()) } catch(e: Exception) { expectedNewTotalStr }
-            showSuccessDialog("transaction of rs $amount completed")
+            showSuccessDialog("Transaction of ₹$amount completed")
             resetState()
 
 
@@ -781,7 +779,7 @@ class NfcScanActivity : AppCompatActivity() {
                 result.onSuccess { response ->
                     val balanceFormatter = java.text.DecimalFormat("#,###.00")
                     val formattedTotal = balanceFormatter.format(response.newCardTotal)
-                    showSuccessDialog("transaction of rs $amount completed")
+                    showSuccessDialog("Transaction of ₹$amount completed")
                     resetState()
 
                 }.onFailure { e ->

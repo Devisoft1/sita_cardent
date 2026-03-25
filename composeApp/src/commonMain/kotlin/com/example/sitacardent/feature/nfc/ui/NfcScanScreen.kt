@@ -336,7 +336,7 @@ fun NfcScanScreen(
         scope.launch {
             val result = repository.addAmount(verifiedMemberId.toString(), amount, verifiedCardMfid ?: "", password)
             result.onSuccess { response ->
-                successMessage = "transaction of rs $amount completed"
+                successMessage = "Transaction of ₹$amount completed"
                 memberCurrentTotal = response.newCardTotal
                 invoiceAmount = ""
                 password = ""
@@ -625,22 +625,13 @@ fun NfcScanScreen(
                 ) {
                     Column(Modifier.padding(10.dp)) {
 
-                        Text(
-                            text = "Add Amount",
-                            color = SitaBlue,
-                            fontSize = 13.sp,
-                            fontWeight = FontWeight.Bold
-                        )
-
-                        Spacer(Modifier.height(10.dp))
-
                         OutlinedTextField(
                             value = invoiceAmount,
                             onValueChange = { invoiceAmount = it },
                             label = { Text("Enter Amount") },
                             leadingIcon = {
                                 Text(
-                                    text = "Rs.",
+                                    text = "₹",
                                     fontSize = 14.sp,
                                     fontWeight = FontWeight.Bold,
                                     color = SitaBlue

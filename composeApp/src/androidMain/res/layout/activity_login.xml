@@ -39,19 +39,14 @@
                 android:paddingHorizontal="@dimen/_20sdp"
                 android:paddingVertical="@dimen/_24sdp">
 
-                <com.google.android.material.imageview.ShapeableImageView
+                <ImageView
                     android:id="@+id/ivLogo"
-                    android:layout_width="@dimen/_100sdp"
-                    android:layout_height="@dimen/_100sdp"
+                    android:layout_width="@dimen/_150sdp"
+                    android:layout_height="@dimen/_150sdp"
                     android:src="@drawable/devisoft_logo"
                     android:layout_gravity="center_horizontal"
                     android:layout_marginBottom="@dimen/_16sdp"
-                    android:background="@android:color/white"
-                    android:padding="20dp"
-                    android:scaleType="centerInside"
-                    app:shapeAppearanceOverlay="@style/CircleShapeAppearance"
-                    app:strokeWidth="1dp"
-                    app:strokeColor="@color/devisoft_blue" />
+                    android:scaleType="centerInside" />
 
                 <com.google.android.material.textfield.TextInputLayout
                     android:id="@+id/tilEmail"

@@ -215,18 +215,13 @@ fun LoginScreen(onLoginSuccess: (String) -> Unit) {
                     Box(
                         modifier = Modifier
                             .padding(bottom = 16.dp)
-                            .size(100.dp),
+                            .size(150.dp),
                         contentAlignment = Alignment.Center
                     ) {
                         Image(
                             painter = painterResource(Res.drawable.devisoft_logo),
                             contentDescription = "Logo",
-                            modifier = Modifier
-                                .size(100.dp)
-                                .clip(CircleShape)
-                                .background(Color.White)
-                                .border(1.dp, DevisoftBlue, CircleShape)
-                                .padding(16.dp),
+                            modifier = Modifier.fillMaxSize(),
                             contentScale = ContentScale.Fit
                         )
                     }
