@@ -598,7 +598,9 @@ fun NfcScanScreen(
 
                         MemberInfoRow("Member ID", verifiedMemberId.toString())
                         Spacer(Modifier.height(4.dp))
-                        MemberInfoRow("Email Address", verifiedEmail ?: verifiedCompanyName ?: "--")
+                        MemberInfoRow("Member Name", verifiedCompanyName ?: "--")
+                        Spacer(Modifier.height(4.dp))
+                        MemberInfoRow("Company Name", verifiedEmail ?: verifiedCompanyName ?: "--")
                         Spacer(Modifier.height(4.dp))
                         MemberInfoRow("Expiry Date", formatDate(memberValidity ?: "--"))
                         Spacer(Modifier.height(4.dp))
