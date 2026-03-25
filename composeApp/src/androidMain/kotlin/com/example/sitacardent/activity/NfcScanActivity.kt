@@ -254,6 +254,11 @@ class NfcScanActivity : AppCompatActivity() {
             }
             insets
         }
+
+        findViewById<android.view.View>(R.id.llPoweredBy).setOnClickListener {
+            val intent = Intent(Intent.ACTION_VIEW, android.net.Uri.parse("https://devisoft.co.in"))
+            startActivity(intent)
+        }
         // Note: btnBack was removed from layout_app_bar_main.xml per previous instructions
     }
     

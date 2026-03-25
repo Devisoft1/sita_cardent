@@ -50,6 +50,7 @@ import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.LocalUriHandler
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.draw.rotate
@@ -411,10 +412,11 @@ fun LoginScreen(onLoginSuccess: (String) -> Unit) {
                     Spacer(modifier = Modifier.height(16.dp))
 
                     // Powered by DeviSoft - styled with brand colors
+                    val uriHandler = LocalUriHandler.current
                     Row(
                         verticalAlignment = Alignment.CenterVertically,
                         horizontalArrangement = Arrangement.Center,
-                        modifier = Modifier.fillMaxWidth()
+                        modifier = Modifier.fillMaxWidth().clickable { uriHandler.openUri("https://devisoft.co.in") }
                     ) {
                         Text(text = "Powered by ", color = TextSecondary, fontSize = 11.sp)
                         Text(text = "Devi", color = DevisoftBlue, fontSize = 11.sp, fontWeight = FontWeight.Bold)

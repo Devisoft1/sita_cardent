@@ -74,6 +74,12 @@ class MainActivity : AppCompatActivity() {
 
         val btnLogin = findViewById<Button>(R.id.btnLogin)
         val tvForgotPassword = findViewById<TextView>(R.id.tvForgotPassword)
+        val llPoweredBy = findViewById<android.view.View>(R.id.llPoweredBy)
+
+        llPoweredBy.setOnClickListener {
+            val intent = Intent(Intent.ACTION_VIEW, android.net.Uri.parse("https://devisoft.co.in"))
+            startActivity(intent)
+        }
 
         // Pre-fill email/autofill logic?
         val lastUser = LocalStorage.getUserInfo()

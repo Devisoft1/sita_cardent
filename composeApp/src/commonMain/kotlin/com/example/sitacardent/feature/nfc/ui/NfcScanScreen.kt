@@ -13,6 +13,7 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.LocalUriHandler
 import androidx.compose.foundation.pager.HorizontalPager
 import androidx.compose.foundation.pager.rememberPagerState
 import com.example.sitacardent.network.MemberRepository
@@ -732,6 +733,7 @@ fun NfcScanScreen(
         }
 
         // Powered by DeviSoft - Pinned to bottom
+        val uriHandler = LocalUriHandler.current
         Row(
             verticalAlignment = Alignment.CenterVertically,
             horizontalArrangement = Arrangement.Center,
@@ -740,6 +742,7 @@ fun NfcScanScreen(
                 .align(Alignment.BottomCenter)
                 .background(BgLight) // Ensure background is solid behind footer
                 .padding(top = 16.dp, bottom = 32.dp)
+                .clickable { uriHandler.openUri("https://devisoft.co.in") }
         ) {
             Text(text = "Powered by ", color = TextSecondary, fontSize = 11.sp)
             Text(text = "Devi", color = SitaBlue, fontSize = 11.sp, fontWeight = FontWeight.Bold)

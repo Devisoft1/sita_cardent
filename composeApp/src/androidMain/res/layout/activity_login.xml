@@ -153,6 +153,7 @@
                     app:elevation="@dimen/_6sdp" />
 
                 <LinearLayout
+                    android:id="@+id/llPoweredBy"
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
                     android:layout_gravity="center"
