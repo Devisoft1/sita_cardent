@@ -55,6 +55,8 @@ class NfcScanActivity : AppCompatActivity() {
     private var scanError: String? = null
     private var pendingWriteAmount: String? = null
     private var lastScannedTag: Tag? = null
+    private var lastTagIdString: String? = null
+    private var lastTagTimestamp: Long = 0
     
     // NFC Adapter
     private var nfcAdapter: NfcAdapter? = null
@@ -364,6 +366,8 @@ class NfcScanActivity : AppCompatActivity() {
         cvMemberDetails.visibility = View.GONE
         cvTransaction.visibility = View.GONE
         enableForegroundDispatch()
+        lastTagIdString = null
+        lastTagTimestamp = 0
         
         countDownTimer?.cancel()
         countDownTimer = object : android.os.CountDownTimer(60000, 1000) {
@@ -375,7 +379,7 @@ class NfcScanActivity : AppCompatActivity() {
             override fun onFinish() {
                 if (isScanning) {
                     stopScanning()
-                    showStatus("No card detected\nPlease try again", true)
+                    showStatus("No card detected (or multiple cards present)\nPlease try again", true)
                 }
             }
         }.start()
@@ -423,10 +427,55 @@ class NfcScanActivity : AppCompatActivity() {
         super.onNewIntent(intent)
         if (intent.action == NfcAdapter.ACTION_TAG_DISCOVERED ||
             intent.action == NfcAdapter.ACTION_TECH_DISCOVERED) {
+            
+            Log.d(TAG, "MULTIPLE_CARD_CHECK: New Intent Received - Action: ${intent.action}")
 
-            Log.d(TAG, "NFC Tag Detected")
+            // Note: EXTRA_TAGS is a hidden API, relying on techList duplicate check instead
+
             val tag = intent.getParcelableExtra<Tag>(NfcAdapter.EXTRA_TAG)
             tag?.let {
+                val currentTagId = bytesToHex(it.id)
+                val currentTime = System.currentTimeMillis()
+                
+                // Heuristic 1: Duplicate Techs (Key indicator)
+                val techs = it.techList
+                Log.d(TAG, "MULTIPLE_CARD_CHECK: Tag ID: $currentTagId, Techs: ${techs.joinToString(", ")}")
+                val uniqueTechs = techs.distinct()
+                if (techs.size != uniqueTechs.size) {
+                    Log.w(TAG, "MULTIPLE_CARD_CHECK: FAILED - Duplicate technologies detected in techList!")
+                    runOnUiThread {
+                        stopScanning()
+                        resetState()
+                        showStatus("Multiple cards detected!\nPlease try again", true)
+                        com.google.android.material.dialog.MaterialAlertDialogBuilder(this)
+                            .setTitle("Multiple Cards")
+                            .setMessage("Interference detected. Please hold only one card and try again.")
+                            .setPositiveButton("OK", null)
+                            .show()
+                    }
+                    return
+                }
+
+                // Heuristic 2: Rapid ID change
+                if (lastTagIdString != null && lastTagIdString != currentTagId && (currentTime - lastTagTimestamp) < 4000) {
+                    Log.w(TAG, "MULTIPLE_CARD_CHECK: FAILED - Rapid ID change detected (Last: $lastTagIdString, Current: $currentTagId, Delta: ${currentTime - lastTagTimestamp}ms)")
+                    runOnUiThread {
+                        stopScanning()
+                        resetState()
+                        showStatus("Multiple cards detected!\nPlease tap only one card", true)
+                        com.google.android.material.dialog.MaterialAlertDialogBuilder(this)
+                            .setTitle("Multiple Cards")
+                            .setMessage("It looks like multiple cards are near the reader. Please hold only one card and try again.")
+                            .setPositiveButton("OK", null)
+                            .show()
+                    }
+                    return
+                }
+                
+                Log.d(TAG, "MULTIPLE_CARD_CHECK: PASSED - No multiple cards detected.")
+                
+                lastTagIdString = currentTagId
+                lastTagTimestamp = currentTime
                 lastScannedTag = it
                 if (pendingWriteAmount != null) {
                     val success = writeAmountToTag(it, pendingWriteAmount!!)
