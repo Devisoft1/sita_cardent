@@ -3,9 +3,12 @@ package com.example.sitacardent.activity
 import android.app.PendingIntent
 import android.content.Intent
 import android.content.IntentFilter
+import android.nfc.NdefMessage
+import android.nfc.NdefRecord
 import android.nfc.NfcAdapter
 import android.nfc.Tag
 import android.nfc.tech.MifareClassic
+import android.nfc.tech.Ndef
 import android.os.Build
 import android.os.Bundle
 import android.content.Context
@@ -403,8 +406,13 @@ class NfcScanActivity : AppCompatActivity() {
         val intent = Intent(this, javaClass).addFlags(Intent.FLAG_ACTIVITY_SINGLE_TOP)
         val flags = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) PendingIntent.FLAG_MUTABLE else 0
         val pendingIntent = PendingIntent.getActivity(this, 0, intent, flags)
-        val filters = arrayOf(IntentFilter(NfcAdapter.ACTION_TECH_DISCOVERED))
-        nfcAdapter?.enableForegroundDispatch(this, pendingIntent, filters, arrayOf(arrayOf(MifareClassic::class.java.name)))
+        val filters = arrayOf(
+            IntentFilter(NfcAdapter.ACTION_NDEF_DISCOVERED),
+            IntentFilter(NfcAdapter.ACTION_TECH_DISCOVERED),
+            IntentFilter(NfcAdapter.ACTION_TAG_DISCOVERED)
+        )
+        // Pass null for techLists to capture everything
+        nfcAdapter?.enableForegroundDispatch(this, pendingIntent, filters, null)
     }
 
     private fun disableForegroundDispatch() {
@@ -427,8 +435,13 @@ class NfcScanActivity : AppCompatActivity() {
 
     override fun onNewIntent(intent: Intent) {
         super.onNewIntent(intent)
+        
+        // Check for NDEF URL first
+        if (handleNdefUrl(intent)) return
+
         if (intent.action == NfcAdapter.ACTION_TAG_DISCOVERED ||
-            intent.action == NfcAdapter.ACTION_TECH_DISCOVERED) {
+            intent.action == NfcAdapter.ACTION_TECH_DISCOVERED ||
+            intent.action == NfcAdapter.ACTION_NDEF_DISCOVERED) {
             
             Log.d(TAG, "MULTIPLE_CARD_CHECK: New Intent Received - Action: ${intent.action}")
 
@@ -510,6 +523,71 @@ class NfcScanActivity : AppCompatActivity() {
                     }
                 }
             }
+        }
+    }
+
+    private fun handleNdefUrl(intent: Intent): Boolean {
+        val rawMessages = intent.getParcelableArrayExtra(NfcAdapter.EXTRA_NDEF_MESSAGES)
+        if (rawMessages != null) {
+            for (rawMsg in rawMessages) {
+                val msg = rawMsg as NdefMessage
+                for (record in msg.records) {
+                    if (record.tnf == NdefRecord.TNF_WELL_KNOWN && 
+                        java.util.Arrays.equals(record.type, NdefRecord.RTD_URI)) {
+                        val uri = record.toUri()
+                        if (uri != null) {
+                            runOnUiThread {
+                                openExternalUrl(uri.toString())
+                            }
+                            return true
+                        }
+                    }
+                }
+            }
+        }
+        // Fallback: Check if the tag itself has NDEF tech even if ACTION_NDEF_DISCOVERED wasn't triggered
+        val tag = intent.getParcelableExtra<Tag>(NfcAdapter.EXTRA_TAG)
+        if (tag != null) {
+            val ndef = Ndef.get(tag)
+            if (ndef != null) {
+                try {
+                    ndef.connect()
+                    val msg = ndef.ndefMessage
+                    if (msg != null) {
+                        for (record in msg.records) {
+                            if (record.tnf == NdefRecord.TNF_WELL_KNOWN && 
+                                java.util.Arrays.equals(record.type, NdefRecord.RTD_URI)) {
+                                val uri = record.toUri()
+                                if (uri != null) {
+                                    val url = uri.toString()
+                                    ndef.close()
+                                    runOnUiThread {
+                                        openExternalUrl(url)
+                                    }
+                                    return true
+                                }
+                            }
+                        }
+                    }
+                    ndef.close()
+                } catch (e: Exception) {
+                    Log.e(TAG, "Error reading NDEF from tag", e)
+                }
+            }
+        }
+        return false
+    }
+
+    private fun openExternalUrl(url: String) {
+        try {
+            Log.d(TAG, "Opening URL from NFC: $url")
+            val intent = Intent(Intent.ACTION_VIEW, android.net.Uri.parse(url))
+            startActivity(intent)
+            stopScanning()
+            resetState()
+        } catch (e: Exception) {
+            Log.e(TAG, "Failed to open URL: $url", e)
+            Toast.makeText(this, "Failed to open URL", Toast.LENGTH_SHORT).show()
         }
     }
 
