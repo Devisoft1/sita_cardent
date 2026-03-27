@@ -72,6 +72,10 @@ fun NfcScanScreen(
     onExternalErrorConsumed: () -> Unit = {},
     onLogoLongClick: (() -> Unit)? = null // Added for secret settings maybe?
 ) {
+    val nfcManager = rememberNfcManager()
+    val detectedTag by nfcManager.detectedTag
+    val isMultipleTags by nfcManager.isMultipleTagsDetected
+
     var isScanningInternal by remember { mutableStateOf(false) }
     var apiError by remember { mutableStateOf<String?>(null) }
     var successMessage by remember { mutableStateOf<String?>(null) }
@@ -145,6 +149,16 @@ fun NfcScanScreen(
     
     // Use external scanning state if provided, otherwise local
     val isScanning = isExternalScanning ?: isScanningInternal
+    
+    // Sync internal scanning with nfcManager on iOS
+    LaunchedEffect(isScanningInternal) {
+        if (isScanningInternal) {
+            nfcManager.startScanning()
+        } else {
+            nfcManager.stopScanning()
+        }
+    }
+
     val amountFocusRequester = remember { FocusRequester() }
 
     var isTimeout by remember { mutableStateOf(false) }
@@ -312,6 +326,42 @@ fun NfcScanScreen(
         }
     }
 
+    val uriHandler = LocalUriHandler.current
+
+    // Handle NFC Manager Tag Detection (for KMP/iOS)
+    LaunchedEffect(detectedTag) {
+        detectedTag?.let { tag ->
+            val url = nfcManager.extractUrl(tag)
+            if (url != null) {
+                // LOGO SCAN case: Open URL
+                uriHandler.openUri(url)
+                isScanningInternal = false
+                nfcManager.stopScanning()
+            } else {
+                // MEMBER SCAN case: Read Card Data
+                isLoading = true
+                nfcManager.readCard { success, data, error ->
+                    if (success && data != null) {
+                        verifyMember(
+                            idToVerify = data["memberId"] ?: "",
+                            companyToVerify = data["companyName"] ?: "",
+                            cardMfid = data["card_mfid"] ?: "",
+                            password = data["password"] ?: "",
+                            cardValidity = data["validUpto"] ?: "",
+                            cardType = data["cardType"] ?: ""
+                        )
+                        password = data["password"] ?: ""
+                    } else {
+                        apiError = error
+                    }
+                    isLoading = false
+                    isScanningInternal = false
+                    nfcManager.stopScanning()
+                }
+            }
+        }
+    }
+
     fun addAmount() {
         if (verifiedMemberId == null) {
             apiError = "Please verify member first"
@@ -452,8 +502,8 @@ fun NfcScanScreen(
                 Box(
                     modifier = Modifier
                         .align(Alignment.TopCenter)
-                        .padding(top = 150.dp)
-                        .size(180.dp)
+                        .padding(top = 130.dp)
+                        .size(220.dp)
                         .zIndex(10f)
                         .combinedClickable(
                             onClick = {
@@ -475,12 +525,12 @@ fun NfcScanScreen(
                         model = logoUrlValue,
                         contentDescription = "Logo",
                         modifier = Modifier
-                            .size(150.dp)
+                            .size(190.dp)
                             .align(Alignment.Center)
                             .clip(CircleShape)
                             .background(Color.White)
                             .border(2.dp, SitaBlue, CircleShape)
-                            .padding(16.dp),
+                            .padding(20.dp),
                         contentScale = androidx.compose.ui.layout.ContentScale.Fit,
 
                         placeholder = painterResource(Res.drawable.sita_logo),
@@ -497,6 +547,7 @@ fun NfcScanScreen(
                     isLoading -> "Processing..."
                     successMessage != null -> "Transaction Successful"
                     apiError != null -> apiError ?: "Error"
+                    isMultipleTags -> "Multiple cards detected! Please hold one card only."
                     isTimeout -> "No card detected\nPlease try again"
                     isScanning -> "Searching for card...\nHold it near the back\nTime Elapse: $remainingSeconds Seconds"
                     else -> "Ready to Verify\nTap logo to scan"

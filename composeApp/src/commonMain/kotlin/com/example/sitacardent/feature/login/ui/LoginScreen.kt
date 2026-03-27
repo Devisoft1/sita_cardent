@@ -211,17 +211,17 @@ fun LoginScreen(onLoginSuccess: (String) -> Unit) {
                     modifier = Modifier.padding(horizontal = 24.dp, vertical = 24.dp),
                     horizontalAlignment = Alignment.CenterHorizontally
                 ) {
-                    // Logo: size first, then clip for circle, then white bg, border outside, padding inside for image breathing room
+                    // Logo: matching size from Card Master (220dp box)
                     Box(
                         modifier = Modifier
-                            .padding(bottom = 16.dp)
-                            .size(150.dp),
+                            .padding(bottom = 24.dp)
+                            .size(220.dp),
                         contentAlignment = Alignment.Center
                     ) {
                         Image(
                             painter = painterResource(Res.drawable.devisoft_logo),
                             contentDescription = "Logo",
-                            modifier = Modifier.fillMaxSize(),
+                            modifier = Modifier.size(180.dp),
                             contentScale = ContentScale.Fit
                         )
                     }
