@@ -502,8 +502,8 @@ fun NfcScanScreen(
                 Box(
                     modifier = Modifier
                         .align(Alignment.TopCenter)
-                        .padding(top = 130.dp)
-                        .size(220.dp)
+                        .padding(top = 160.dp)
+                        .size(160.dp)
                         .zIndex(10f)
                         .combinedClickable(
                             onClick = {
@@ -525,12 +525,12 @@ fun NfcScanScreen(
                         model = logoUrlValue,
                         contentDescription = "Logo",
                         modifier = Modifier
-                            .size(190.dp)
+                            .size(150.dp)
                             .align(Alignment.Center)
                             .clip(CircleShape)
                             .background(Color.White)
                             .border(2.dp, SitaBlue, CircleShape)
-                            .padding(20.dp),
+                            .padding(8.dp),
                         contentScale = androidx.compose.ui.layout.ContentScale.Fit,
 
                         placeholder = painterResource(Res.drawable.sita_logo),
