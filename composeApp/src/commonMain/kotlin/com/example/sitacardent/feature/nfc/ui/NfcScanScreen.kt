@@ -788,9 +788,9 @@ fun NfcScanScreen(
                 .padding(top = 16.dp, bottom = 32.dp)
                 .clickable { uriHandler.openUri("https://devisoft.co.in") }
         ) {
-            Text(text = "Powered by ", color = TextSecondary, fontSize = 11.sp)
-            Text(text = "Devi", color = SitaBlue, fontSize = 11.sp, fontWeight = FontWeight.Bold)
-            Text(text = "Soft", color = Color(0xFFF58220), fontSize = 11.sp, fontWeight = FontWeight.Bold)
+            Text(text = "Powered by ", color = TextSecondary, fontSize = 13.sp)
+            Text(text = "Devi", color = SitaBlue, fontSize = 18.sp, fontWeight = FontWeight.Bold)
+            Text(text = "Soft", color = Color(0xFFF58220), fontSize = 18.sp, fontWeight = FontWeight.Bold)
         }
     }
 
