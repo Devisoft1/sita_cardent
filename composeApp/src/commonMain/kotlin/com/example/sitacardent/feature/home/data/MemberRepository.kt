@@ -25,17 +25,19 @@ class MemberRepository {
         memberId: String,
         companyName: String,
         password: String,
+        shopId: Int,
         cardMfid: String? = null,
         cardValidity: String? = null,
         cardType: String? = null
     ): Result<VerifyMemberResponse> {
-        println("MemberRepository: Verifying Member - ID: $memberId, Company: $companyName, Password: [PROTECTED]")
+        println("MemberRepository: Verifying Member - ID: $memberId, Shop: $shopId, Company: $companyName, Password: [PROTECTED]")
         return try {
             val response = client.patch("$baseUrl/verify") {
                 contentType(ContentType.Application.Json)
                 setBody(
                     VerifyMemberRequest(
                         memberId = memberId,
+                        shop_id = shopId,
                         companyName = companyName,
                         password = password,
                         card_mfid = cardMfid,
@@ -72,12 +74,12 @@ class MemberRepository {
         }
     }
 
-    suspend fun addAmount(memberId: String, amount: Int, cardMfid: String, password: String): Result<AddAmountResponse> {
-        println("MemberRepository: Adding Amount - ID: $memberId, Amount: $amount, Card MFID: $cardMfid, Password: [PROTECTED]")
+    suspend fun addAmount(memberId: String, amount: Int, cardMfid: String, password: String, shopId: Int): Result<AddAmountResponse> {
+        println("MemberRepository: Adding Amount - ID: $memberId, Amount: $amount, Card MFID: $cardMfid, Shop: $shopId, Password: [PROTECTED]")
         return try {
             val response: AddAmountResponse = client.post("$baseUrl/add-amount") {
                 contentType(ContentType.Application.Json)
-                setBody(AddAmountRequest(memberId, amount, cardMfid, password))
+                setBody(AddAmountRequest(memberId = memberId, shop_id = shopId, amount = amount, card_mfid = cardMfid, password = password))
             }.body()
             println("MemberRepository: Response received: $response")
             if (response.memberId != null) {
@@ -93,13 +95,13 @@ class MemberRepository {
         }
     }
 
-    suspend fun searchMember(query: String): Result<List<MemberDto>> {
-        println("MemberRepository: Searching Member - Query: $query")
+    suspend fun searchMember(query: String, shopId: Int): Result<List<MemberDto>> {
+        println("MemberRepository: Searching Member - Query: $query, Shop: $shopId")
         return try {
-            // Note: baseUrl is ".../api/members". GET request to just "$baseUrl" with params.
             val response = client.get(baseUrl) {
                 url {
                     parameters.append("search", query)
+                    parameters.append("shop_id", shopId.toString())
                 }
             }
             if (response.status.value in 200..299) {
@@ -116,10 +118,14 @@ class MemberRepository {
         }
     }
 
-    suspend fun getMemberById(id: String): Result<MemberDto> {
-        println("MemberRepository: Get Member By ID - ID: $id")
+    suspend fun getMemberById(id: String, shopId: Int): Result<MemberDto> {
+        println("MemberRepository: Get Member By ID - ID: $id, Shop: $shopId")
         return try {
-            val response = client.get("$baseUrl/$id")
+            val response = client.get("$baseUrl/$id") {
+                url {
+                    parameters.append("shop_id", shopId.toString())
+                }
+            }
             if (response.status.value in 200..299) {
                 val member = response.body<MemberDto>()
                 println("MemberRepository: Get By ID Success - ${member.companyName}")

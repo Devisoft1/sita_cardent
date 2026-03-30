@@ -1,13 +1,15 @@
 package com.example.sitacardent.model
 
 import kotlinx.serialization.Serializable
+import kotlinx.serialization.SerialName
 
 @Serializable
 data class VerifyMemberRequest(
-    val memberId: String,
+    @SerialName("memberId") val memberId: String,
+    @SerialName("shop_id") val shop_id: Int,
     val companyName: String,
     val password: String,
-    val card_mfid: String? = null,
+    @SerialName("card_mfid") val card_mfid: String? = null,
     val cardValidity: String? = null,
     val cardType: String? = null
 )
@@ -32,9 +34,10 @@ data class VerifyMemberResponse(
 
 @Serializable
 data class AddAmountRequest(
-    val memberId: String,
+    @SerialName("memberId") val memberId: String,
+    @SerialName("shop_id") val shop_id: Int,
     val amount: Int,
-    val card_mfid: String,
+    @SerialName("card_mfid") val card_mfid: String,
     val password: String
 )
 

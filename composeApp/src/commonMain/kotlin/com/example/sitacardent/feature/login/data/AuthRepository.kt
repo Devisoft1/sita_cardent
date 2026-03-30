@@ -117,6 +117,12 @@ class AuthRepository {
             if (!shopUId.isNullOrBlank()) {
                 val urls = listOf("$baseUrl/$shopUId", "https://apisita.shanti-pos.com/api/shops/$shopUId")
                 for (url in urls) {
+                    // Check if it's a numeric path and skip if shopUId is not numeric
+                    if (url.contains("/api/shops/") && shopUId.toIntOrNull() == null) {
+                        println("LoginDebug: AuthRepository - Skipping numeric shop URL for hex UID: $url")
+                        continue
+                    }
+                    
                     println("LoginDebug: AuthRepository - Trying sID URL: $url")
                     val response = client.get(url) {
                         header("Authorization", "Bearer $token")

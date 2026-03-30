@@ -39,6 +39,7 @@ import androidx.compose.ui.zIndex
 import org.jetbrains.compose.resources.painterResource
 import devisoft.composeapp.generated.resources.Res
 import devisoft.composeapp.generated.resources.sita_logo
+import com.example.sitacardent.isCardExpired
 
 
 // Android color constants - matching colors.xml exactly
@@ -224,6 +225,11 @@ fun NfcScanScreen(
             apiError = "Please enter Member ID and Company Name"
             return
         }
+
+        if (isCardExpired(cardValidity)) {
+            apiError = "Card validity is expired"
+            return
+        }
         
         isLoading = true
         apiError = null
@@ -231,10 +237,12 @@ fun NfcScanScreen(
         
         scope.launch {
             // Pass password to verifyMember along with card details
+            val shopId = LocalStorage.getShopId() ?: 0
             val result = repository.verifyMember(
                 memberId = idToVerify,
                 companyName = companyToVerify,
                 password = password,
+                shopId = shopId,
                 cardMfid = cardMfid,
                 cardValidity = cardValidity,
                 cardType = cardType
@@ -252,7 +260,7 @@ fun NfcScanScreen(
                 // Fallback: If verification failed (likely due to company/password mismatch from bad card write),
                 // try to fetch member by ID directly.
                 println("Verify failed ($e), attempting fallback search for ID: $idToVerify")
-                val searchResult = repository.getMemberById(idToVerify)
+                val searchResult = repository.getMemberById(idToVerify, shopId)
                 
                 searchResult.onSuccess { member ->
                     val fullName = member.companyName ?: ""
@@ -265,6 +273,7 @@ fun NfcScanScreen(
                                 memberId = idToVerify,
                                 companyName = fullName,
                                 password = password,
+                                shopId = LocalStorage.getShopId() ?: 0,
                                 cardMfid = cardMfid,
                                 cardValidity = cardValidity,
                                 cardType = cardType
@@ -384,7 +393,14 @@ fun NfcScanScreen(
         successMessage = null
 
         scope.launch {
-            val result = repository.addAmount(verifiedMemberId.toString(), amount, verifiedCardMfid ?: "", password)
+            val shopId = LocalStorage.getShopId() ?: 0
+            val result = repository.addAmount(
+                memberId = verifiedMemberId.toString(),
+                amount = amount,
+                cardMfid = verifiedCardMfid ?: "",
+                password = password,
+                shopId = shopId
+            )
             result.onSuccess { response ->
                 successMessage = "Transaction of ₹$amount completed"
                 memberCurrentTotal = response.newCardTotal
@@ -811,7 +827,7 @@ fun NfcScanScreen(
 
 
 fun formatAmount(amount: Double?): String {
-    if (amount == null) return "0.00"
+    if (amount == null || amount <= 0.0) return "no amount"
     // Use a simple manual formatting for common module
     val rounded = ((amount * 100.0).toLong() / 100.0)
     val parts = rounded.toString().split(".")
@@ -826,7 +842,7 @@ fun formatAmount(amount: Double?): String {
     val regex = "(\\d)(?=(\\d{3})+(?!\\d))".toRegex()
     val formattedInteger = integerPart.replace(regex, "$1,")
     
-    return "$formattedInteger.$decimalPart"
+    return "₹$formattedInteger.$decimalPart"
 }
 
 @Composable

@@ -38,6 +38,7 @@ import com.example.sitacardent.R
 import com.example.sitacardent.ScannedCardData
 import com.example.sitacardent.network.MemberRepository
 import com.example.sitacardent.model.VerifyMemberResponse
+import com.example.sitacardent.isCardExpired
 import com.google.android.material.textfield.TextInputEditText
 import kotlinx.coroutines.launch
 import java.nio.charset.Charset
@@ -703,6 +704,11 @@ class NfcScanActivity : AppCompatActivity() {
     }
 
     private fun onCardScanned(data: ScannedCardData) {
+        if (isCardExpired(data.validity)) {
+            showStatus("Card validity is expired", true)
+            return
+        }
+
         showStatus("Processing...", false)
         pbLoader.visibility = View.VISIBLE
         currentPassword = data.password
@@ -713,6 +719,7 @@ class NfcScanActivity : AppCompatActivity() {
                 memberId = data.memberId,
                 companyName = data.companyName,
                 password = data.password,
+                shopId = LocalStorage.getShopId() ?: 0,
                 cardMfid = data.cardMfid,
                 cardValidity = data.validity,
                 cardType = data.cardType
@@ -721,7 +728,7 @@ class NfcScanActivity : AppCompatActivity() {
                 displayMemberInfo(response, data.cardMfid)
             }.onFailure { e ->
                 Log.d(TAG, "Verify failed ($e), attempting fallback search for ID: ${data.memberId}")
-                val searchResult = repository.getMemberById(data.memberId)
+                val searchResult = repository.getMemberById(data.memberId, LocalStorage.getShopId() ?: 0)
                 
                 searchResult.onSuccess { member ->
                     Log.d(TAG, "Search success: ${member.companyName}")
@@ -734,6 +741,7 @@ class NfcScanActivity : AppCompatActivity() {
                                 memberId = data.memberId,
                                 companyName = member.companyName,
                                 password = data.password,
+                                shopId = LocalStorage.getShopId() ?: 0,
                                 cardMfid = data.cardMfid,
                                 cardValidity = data.validity,
                                 cardType = data.cardType
@@ -842,7 +850,13 @@ class NfcScanActivity : AppCompatActivity() {
 
 
             lifecycleScope.launch {
-                val result = repository.addAmount(memberId.toString(), amount, currentVerifiedCardMfid ?: "", currentPassword)
+                val result = repository.addAmount(
+                    memberId = memberId.toString(),
+                    amount = amount,
+                    cardMfid = currentVerifiedCardMfid ?: "",
+                    password = currentPassword,
+                    shopId = LocalStorage.getShopId() ?: 0
+                )
                 result.onFailure {
                     Log.e(TAG, "Background API sync failed: ${it.message}")
                 }
@@ -853,7 +867,13 @@ class NfcScanActivity : AppCompatActivity() {
             btnConfirm.isEnabled = false
 
             lifecycleScope.launch {
-                val result = repository.addAmount(memberId.toString(), amount, currentVerifiedCardMfid ?: "", currentPassword)
+                val result = repository.addAmount(
+                    memberId = memberId.toString(),
+                    amount = amount,
+                    cardMfid = currentVerifiedCardMfid ?: "",
+                    password = currentPassword,
+                    shopId = LocalStorage.getShopId() ?: 0
+                )
                 result.onSuccess { response ->
                     val balanceFormatter = java.text.DecimalFormat("#,###.00")
                     val formattedTotal = balanceFormatter.format(response.newCardTotal)
