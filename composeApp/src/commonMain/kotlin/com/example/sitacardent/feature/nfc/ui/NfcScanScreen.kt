@@ -414,7 +414,8 @@ fun NfcScanScreen(
         Column(
             modifier = Modifier
                 .fillMaxWidth()
-                .verticalScroll(rememberScrollState())
+                .verticalScroll(rememberScrollState()),
+            horizontalAlignment = Alignment.CenterHorizontally
         ) {
 
             /* ================= HEADER WITH LOGO ================= */
@@ -717,7 +718,7 @@ fun NfcScanScreen(
                         Spacer(Modifier.height(20.dp))
 
                         Row(
-                            modifier = Modifier.fillMaxWidth(),
+                            modifier = Modifier.fillMaxWidth(0.9f),
                             horizontalArrangement = Arrangement.spacedBy(8.dp)
                         ) {
 
@@ -788,7 +789,7 @@ fun NfcScanScreen(
                 .padding(top = 16.dp, bottom = 32.dp)
                 .clickable { uriHandler.openUri("https://devisoft.co.in") }
         ) {
-            Text(text = "Powered by ", color = TextSecondary, fontSize = 13.sp)
+            Text(text = "Powered by ", color = TextSecondary, fontSize = 11.sp)
             Text(text = "Devi", color = SitaBlue, fontSize = 18.sp, fontWeight = FontWeight.Bold)
             Text(text = "Soft", color = Color(0xFFF58220), fontSize = 18.sp, fontWeight = FontWeight.Bold)
         }

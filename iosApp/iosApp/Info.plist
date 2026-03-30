@@ -3,9 +3,9 @@
 <plist version="1.0">
 <dict>
 	<key>CFBundleDisplayName</key>
-	<string>DeviSoft</string>
+	<string>Sita Member</string>
 	<key>CFBundleName</key>
-	<string>DeviSoft</string>
+	<string>Sita Member</string>
 	<key>CADisableMinimumFrameDurationOnPhone</key>
 	<true/>
 </dict>
