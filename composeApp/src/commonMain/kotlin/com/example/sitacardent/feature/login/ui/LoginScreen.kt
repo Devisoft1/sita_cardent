@@ -414,8 +414,8 @@ fun LoginScreen(onLoginSuccess: (String) -> Unit) {
                         modifier = Modifier.fillMaxWidth().clickable { uriHandler.openUri("https://devisoft.co.in") }
                     ) {
                         Text(text = "Powered by ", color = TextSecondary, fontSize = 11.sp)
-                        Text(text = "Devi", color = DevisoftBlue, fontSize = 18.sp, fontWeight = FontWeight.Bold)
-                        Text(text = "Soft", color = DevisoftOrange, fontSize = 18.sp, fontWeight = FontWeight.Bold)
+                        Text(text = "Devi", color = DevisoftBlue, fontSize = 11.sp, fontWeight = FontWeight.Bold)
+                        Text(text = "Soft", color = DevisoftOrange, fontSize = 11.sp, fontWeight = FontWeight.Bold)
                     }
 
                 }

@@ -1,7 +1,6 @@
 package com.example.sitacardent
 
-import platform.Foundation.NSDate
-import platform.Foundation.NSDateFormatter
+import platform.Foundation.*
 
 actual fun isCardExpired(validity: String): Boolean {
     if (validity.length != 8) return false
@@ -12,14 +11,10 @@ actual fun isCardExpired(validity: String): Boolean {
         
         val validityDate = formatter.dateFromString(validity) ?: return false
         
-        // validityDate is parsed as 00:00:00 of that day.
-        // We add 86400 seconds (24 hours) to cover the whole day.
-        // So the expiry timestamp is validityDate + 1 day
-        val expiryTimeSeconds = validityDate.timeIntervalSince1970 + 86400.0
-        val currentTimeSeconds = NSDate().timeIntervalSince1970
+        val now = NSDate()
+        val expiryDate = validityDate.dateByAddingTimeInterval(86400.0)
         
-        // Expired if current time is past the expiry time
-        currentTimeSeconds > expiryTimeSeconds
+        now.compare(expiryDate) == NSOrderedDescending
     } catch (e: Exception) {
         false
     }
