@@ -1,37 +1,35 @@
 <?xml version="1.0" encoding="utf-8"?>
-<androidx.constraintlayout.widget.ConstraintLayout xmlns:android="http://schemas.android.com/apk/res/android"
+<FrameLayout xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:app="http://schemas.android.com/apk/res-auto"
+    style="@style/AppTheme.AppBar"
     android:layout_width="match_parent"
-    android:layout_height="wrap_content"
-    android:paddingHorizontal="20dp"
-    android:paddingVertical="4dp">
+    android:layout_height="wrap_content">
 
-    <!-- Title (formerly Display Name in the scan page) -->
-    <TextView
-        android:id="@+id/tvAppBarTitle"
-        android:layout_width="wrap_content"
+    <LinearLayout
+        android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:letterSpacing="0.05"
-        android:text="Title"
-        android:textColor="@color/sita_blue"
-        android:textSize="15sp"
-        android:textStyle="bold"
-        app:layout_constraintBottom_toBottomOf="parent"
-        app:layout_constraintStart_toStartOf="parent"
-        app:layout_constraintTop_toTopOf="parent" />
+        android:gravity="center_vertical"
+        android:orientation="horizontal"
+        android:paddingHorizontal="15dp">
 
-    <!-- Action Button (usually Logout) -->
-    <ImageButton
-        android:id="@+id/btnAppBarAction"
-        android:layout_width="48dp"
-        android:layout_height="48dp"
-        android:background="?attr/selectableItemBackgroundBorderless"
-        android:contentDescription="Action"
-        android:padding="10dp"
-        android:src="@drawable/ic_logout"
-        app:layout_constraintBottom_toBottomOf="parent"
-        app:layout_constraintEnd_toEndOf="parent"
-        app:layout_constraintTop_toTopOf="parent"
-        app:tint="@android:color/holo_red_dark" />
+        <!-- Title -->
+        <TextView
+            android:id="@+id/tvAppBarTitle"
+            style="@style/AppTheme.AppBarTitle"
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_weight="1"
+            android:text="Title" />
 
-</androidx.constraintlayout.widget.ConstraintLayout>
+        <!-- Action Button (usually Logout) -->
+        <ImageButton
+            android:id="@+id/btnAppBarAction"
+            style="@style/AppTheme.AppBarIcon"
+            android:layout_width="48dp"
+            android:layout_height="48dp"
+            android:contentDescription="Action"
+            android:src="@drawable/ic_logout"
+            app:tint="@color/error_red" />
+
+    </LinearLayout>
+</FrameLayout>

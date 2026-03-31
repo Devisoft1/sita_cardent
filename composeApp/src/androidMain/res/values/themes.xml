@@ -5,10 +5,31 @@
         <item name="colorPrimary">@color/purple_500</item>
         <item name="colorPrimaryVariant">@color/purple_700</item>
         <item name="colorOnPrimary">@color/white</item>
+        <item name="android:statusBarColor">@color/brand_blue</item>
+        <item name="android:windowLightStatusBar">false</item>
     </style>
 
     <style name="CircleShapeAppearance" parent="">
         <item name="cornerFamily">rounded</item>
         <item name="cornerSize">50%</item>
+    </style>
+
+    <!-- App Bar Styles -->
+    <style name="AppTheme.AppBar" parent="">
+        <item name="android:background">@color/white</item>
+        <item name="android:paddingTop">4dp</item>
+        <item name="android:paddingBottom">4dp</item>
+        <item name="android:elevation">4dp</item>
+    </style>
+
+    <style name="AppTheme.AppBarTitle" parent="">
+        <item name="android:textColor">@color/brand_blue</item>
+        <item name="android:textSize">18sp</item>
+        <item name="android:textStyle">bold</item>
+    </style>
+
+    <style name="AppTheme.AppBarIcon" parent="">
+        <item name="android:background">?attr/selectableItemBackgroundBorderless</item>
+        <item name="android:padding">8dp</item>
     </style>
 </resources>

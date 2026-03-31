@@ -29,4 +29,7 @@
     <color name="devisoft_orange_dark">#D86C14</color>
     <color name="devisoft_blue_pale">#F2F7FD</color>
     <color name="devisoft_blue_soft">#E1EBFB</color>
+    
+    <color name="brand_blue">#2D2F91</color>
+    <color name="error_red">#E53935</color>
 </resources>

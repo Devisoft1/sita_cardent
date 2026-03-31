@@ -115,9 +115,6 @@ class NfcScanActivity : AppCompatActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         
-        // Use edge-to-edge for the proper full screen capability
-        enableEdgeToEdge()
-
         // Initialize LocalStorage
         LocalStorage.init(this)
 
