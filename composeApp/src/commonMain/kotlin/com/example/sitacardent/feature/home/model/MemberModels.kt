@@ -35,7 +35,7 @@ data class VerifyMemberResponse(
 @Serializable
 data class AddAmountRequest(
     @SerialName("memberId") val memberId: String,
-    @SerialName("shop_id") val shop_id: Int,
+    @SerialName("shopId") val shop_id: Int,
     val amount: Int,
     @SerialName("card_mfid") val card_mfid: String,
     val password: String
