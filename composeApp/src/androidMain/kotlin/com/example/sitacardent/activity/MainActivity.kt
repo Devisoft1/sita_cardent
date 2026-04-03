@@ -178,16 +178,22 @@ class MainActivity : AppCompatActivity() {
                         // Toast.makeText(this@MainActivity, "Login Successful", Toast.LENGTH_SHORT).show()
                         navigateToNfcScanAndFinish()
                     }.onFailure { error ->
-                        // Show error on Password field typically, or a general error
-                        // "Invalid email or password" usually goes to password or both.
-                        // We will set it on the Password field as requested "if password is wrong"
-                        tilPassword.error = error.message ?: "Login failed"
+                        // Show error in AlertDialog as requested
+                        com.google.android.material.dialog.MaterialAlertDialogBuilder(this@MainActivity)
+                            .setTitle("Login Failed")
+                            .setMessage(error.message ?: "Invalid email or password")
+                            .setPositiveButton("OK", null)
+                            .show()
                         
                         btnLogin.isEnabled = true
                         btnLogin.text = "LOGIN"
                     }
                 } catch (e: Exception) {
-                     tilPassword.error = "An unexpected error occurred"
+                     com.google.android.material.dialog.MaterialAlertDialogBuilder(this@MainActivity)
+                         .setTitle("Error")
+                         .setMessage("An unexpected error occurred: ${e.message}")
+                         .setPositiveButton("OK", null)
+                         .show()
                      e.printStackTrace()
                      btnLogin.isEnabled = true
                      btnLogin.text = "LOGIN"
