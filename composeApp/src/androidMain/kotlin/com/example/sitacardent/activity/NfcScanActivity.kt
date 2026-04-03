@@ -382,8 +382,7 @@ class NfcScanActivity : AppCompatActivity() {
             override fun onFinish() {
                 if (isScanning) {
                     stopScanning()
-                    showResultPopup("Timeout", "No card detected (or multiple cards present)\nPlease try again", isError = true)
-                    showStatus("Tap logo to scan", false)
+                    showResultPopup("Timeout", "No card detected (or multiple cards present)\nPlease try again", isError = true, onOk = ::resetState)
                 }
             }
         }.start()
@@ -495,12 +494,11 @@ class NfcScanActivity : AppCompatActivity() {
                     if (success) {
                         val balanceFormatter = java.text.DecimalFormat("#,###.00")
                         val formattedTotal = try { balanceFormatter.format(pendingWriteAmount?.toDouble() ?: 0.0) } catch(e: Exception) { pendingWriteAmount }
-                        showResultPopup("Success", "Amount added successfully!\nNew Balance: $formattedTotal", isError = false)
-                        resetState()
+                        showResultPopup("Success", "Amount added successfully!\nNew Balance: $formattedTotal", isError = false, onOk = ::resetState)
                         pendingWriteAmount = null
                     } else {
                         runOnUiThread {
-                            showResultPopup("Write Error", "Write Failed. Please tap again.", isError = true)
+                        showResultPopup("Write Error", "Write Failed. Please tap again.", isError = true, onOk = ::resetState)
                         }
                     }
                 } else if (isScanning) {
@@ -514,9 +512,8 @@ class NfcScanActivity : AppCompatActivity() {
                              scanError = e.message
                              val title = if (e.message == "Card is empty") "Empty Card" else "Read Error"
                              val msg = if (e.message == "Card is empty") "card is empty not assigne to any member" else (scanError ?: "Error")
-                             showResultPopup(title, msg, isError = true)
+                             showResultPopup(title, msg, isError = true, onOk = ::resetState)
                              stopScanning()
-                             resetState()
                         } else {
                              Log.e(TAG, "Scan failed silently: ${e.message}")
                         }
@@ -587,7 +584,7 @@ class NfcScanActivity : AppCompatActivity() {
             resetState()
         } catch (e: Exception) {
             Log.e(TAG, "Failed to open URL: $url", e)
-            showResultPopup("Error", "Failed to open URL", isError = true)
+            showResultPopup("Error", "Failed to open URL", isError = true, onOk = ::resetState)
         }
     }
 
@@ -708,9 +705,8 @@ class NfcScanActivity : AppCompatActivity() {
 
     private fun onCardScanned(data: ScannedCardData) {
         if (isCardExpired(data.validity)) {
-            showResultPopup("Expired", "Card validity is expired", isError = true)
+            showResultPopup("Expired", "Card validity is expired", isError = true, onOk = ::resetState)
             stopScanning()
-            resetState()
             return
         }
 
@@ -757,23 +753,23 @@ class NfcScanActivity : AppCompatActivity() {
                             }.onFailure { retryError ->
                                  Log.e(TAG, "Retry verification failed: ${retryError.message}")
                                  pbLoader.visibility = View.GONE
-                                 showResultPopup("Verification Failed", "Card Not Registered: ${retryError.message}", isError = true)
+                                 showResultPopup("Verification Failed", "Card Not Registered: ${retryError.message}", isError = true, onOk = ::resetState)
                                  btnStopScanning.visibility = View.VISIBLE // Allow them to cancel
                                  isScanning = true
                              }
                          }
                      } else {
-                         // Names matched, but primary verifyMember STILL failed. This implies backend genuinely rejected it (e.g. bad password or expired).
-                         pbLoader.visibility = View.GONE
-                         showResultPopup("Verification Rejected", "Verification Rejected: ${e.message}", isError = true)
-                         btnStopScanning.visibility = View.VISIBLE
-                         isScanning = true
+                          // Names matched, but primary verifyMember STILL failed. This implies backend genuinely rejected it (e.g. bad password or expired).
+                          pbLoader.visibility = View.GONE
+                          showResultPopup("Verification Rejected", "Verification Rejected: ${e.message}", isError = true, onOk = ::resetState)
+                          btnStopScanning.visibility = View.VISIBLE
+                          isScanning = true
                      }
-                 }.onFailure { fallbackError ->
-                     pbLoader.visibility = View.GONE
-                     showResultPopup("Verification Failed", "Verification Failed: ${e.message}", isError = true)
-                     scanError = "Verification Failed"
-                 }
+                  }.onFailure { fallbackError ->
+                      pbLoader.visibility = View.GONE
+                      showResultPopup("Verification Failed", "Verification Failed: ${e.message}", isError = true, onOk = ::resetState)
+                      scanError = "Verification Failed"
+                  }
              }
          }
      }
@@ -850,8 +846,7 @@ class NfcScanActivity : AppCompatActivity() {
         if (writeSuccess) {
             val balanceFormatter = java.text.DecimalFormat("#,###.00")
             val formattedTotal = try { balanceFormatter.format(expectedNewTotalStr.toDouble()) } catch(e: Exception) { expectedNewTotalStr }
-            showResultPopup("Success", "Transaction of ₹$amount completed", isError = false)
-            resetState()
+            showResultPopup("Success", "Transaction of ₹$amount completed", isError = false, onOk = ::resetState)
 
             lifecycleScope.launch {
                 val result = repository.addAmount(
@@ -881,23 +876,23 @@ class NfcScanActivity : AppCompatActivity() {
                 result.onSuccess { response ->
                     val balanceFormatter = java.text.DecimalFormat("#,###.00")
                     val formattedTotal = balanceFormatter.format(response.newCardTotal)
-                    showResultPopup("Success", "Transaction of ₹$amount completed", isError = false)
-                    resetState()
+                    showResultPopup("Success", "Transaction of ₹$amount completed", isError = false, onOk = ::resetState)
                 }.onFailure { e ->
                     pbLoader.visibility = View.GONE
-                    showResultPopup("Transaction Failed", "Transaction Failed: ${e.message}", isError = true)
+                    showResultPopup("Transaction Failed", "Transaction Failed: ${e.message}", isError = true, onOk = ::resetState)
                     btnConfirm.isEnabled = true
                 }
             }
         }
     }
 
-    private fun showResultPopup(title: String, message: String, isError: Boolean = true) {
+    private fun showResultPopup(title: String, message: String, isError: Boolean = true, onOk: (() -> Unit)? = null) {
         val builder = com.google.android.material.dialog.MaterialAlertDialogBuilder(this)
         builder.setTitle(title)
         builder.setMessage(message)
         builder.setPositiveButton("OK") { dialog, _ ->
             dialog.dismiss()
+            onOk?.invoke()
         }
         builder.setCancelable(false)
         val dialog = builder.create()
