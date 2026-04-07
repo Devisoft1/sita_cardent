@@ -458,7 +458,7 @@ fun NfcScanScreen(
                     Row(
                         modifier = Modifier
                             .fillMaxWidth()
-                            .height(40.dp)
+                            .height(44.dp)
                             .padding(horizontal = 20.dp),
                         horizontalArrangement = Arrangement.SpaceBetween,
                         verticalAlignment = Alignment.CenterVertically
@@ -467,7 +467,7 @@ fun NfcScanScreen(
                         Text(
                             text = displayName.replaceFirstChar { it.uppercase() },
                             color = if (isIos) SitaBlue else Color.White,
-                            fontSize = 16.sp,
+                            fontSize = 17.sp,
                             fontWeight = FontWeight.ExtraBold,
                             letterSpacing = 0.5.sp
                         )
@@ -475,13 +475,13 @@ fun NfcScanScreen(
                         // Logout Button
                         IconButton(
                             onClick = onBackClick,
-                            modifier = Modifier.size(32.dp)
+                            modifier = Modifier.size(36.dp)
                         ) {
                             Icon(
                                 imageVector = Icons.Default.ExitToApp,
                                 contentDescription = "Logout",
                                 tint = Color.Red,
-                                modifier = Modifier.size(20.dp)
+                                modifier = Modifier.size(22.dp)
                             )
                         }
                     }
