@@ -434,42 +434,52 @@ fun NfcScanScreen(
             horizontalAlignment = Alignment.CenterHorizontally
         ) {
 
-            /* ================= HEADER WITH LOGO ================= */
+            /* ================= HEADER (Status Bar + App Bar) ================= */
             
-            // App Bar Row (on grey BgLight background, matching activity_nfc_scan.xml + layout_app_bar_main.xml)
-            Box(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .windowInsetsPadding(WindowInsets.statusBars)
-                    .background(BgLight)
+            Surface(
+                modifier = Modifier.fillMaxWidth(),
+                color = SitaBlue,
+                shadowElevation = 8.dp,
+                tonalElevation = 4.dp
             ) {
-                Row(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .padding(horizontal = 20.dp, vertical = 4.dp),
-                    horizontalArrangement = Arrangement.SpaceBetween,
-                    verticalAlignment = Alignment.CenterVertically
-                ) {
-                    // Title - SitaBlue on grey background (matches layout_app_bar_main.xml tvAppBarTitle)
-                    Text(
-                        text = displayName,
-                        color = SitaBlue,
-                        fontSize = 15.sp,
-                        fontWeight = FontWeight.Bold,
-                        letterSpacing = 0.05.sp
+                Column(modifier = Modifier.fillMaxWidth()) {
+                    // Status bar area (Matches SitaBlue background)
+                    Box(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .windowInsetsPadding(WindowInsets.statusBars)
                     )
 
-                    // Logout Button - red icon, matches layout_app_bar_main.xml btnAppBarAction
-                    IconButton(
-                        onClick = onBackClick,
-                        modifier = Modifier.size(48.dp)
+                    // App Bar Content (Fixed height for title and logout)
+                    Row(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .height(64.dp)
+                            .padding(horizontal = 20.dp),
+                        horizontalArrangement = Arrangement.SpaceBetween,
+                        verticalAlignment = Alignment.CenterVertically
                     ) {
-                        Icon(
-                            imageVector = Icons.Default.ExitToApp,
-                            contentDescription = "Logout",
-                            tint = Color.Red,
-                            modifier = Modifier.size(28.dp).padding(4.dp)
+                        // Title - Now centers within the 64dp row correctly
+                        Text(
+                            text = displayName.replaceFirstChar { it.uppercase() },
+                            color = Color.White,
+                            fontSize = 18.sp,
+                            fontWeight = FontWeight.ExtraBold,
+                            letterSpacing = 0.5.sp
                         )
+
+                        // Logout Button (White icon)
+                        IconButton(
+                            onClick = onBackClick,
+                            modifier = Modifier.size(44.dp)
+                        ) {
+                            Icon(
+                                imageVector = Icons.Default.ExitToApp,
+                                contentDescription = "Logout",
+                                tint = Color.White,
+                                modifier = Modifier.size(26.dp)
+                            )
+                        }
                     }
                 }
             }
