@@ -436,48 +436,52 @@ fun NfcScanScreen(
 
             /* ================= HEADER (Status Bar + App Bar) ================= */
             
-            Surface(
-                modifier = Modifier.fillMaxWidth(),
-                color = SitaBlue,
-                shadowElevation = 8.dp,
-                tonalElevation = 4.dp
-            ) {
-                Column(modifier = Modifier.fillMaxWidth()) {
-                    // Status bar area (Matches SitaBlue background)
-                    Box(
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .windowInsetsPadding(WindowInsets.statusBars)
-                    )
+            // Platform detection
+            val isIos = getPlatform().name.contains("iOS", ignoreCase = true)
+            
+            Column(modifier = Modifier.fillMaxWidth()) {
+                // Status bar area (Always SitaBlue)
+                Box(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .background(SitaBlue)
+                        .windowInsetsPadding(WindowInsets.statusBars)
+                )
 
-                    // App Bar Content (Fixed height for title and logout)
+                // App Bar Content
+                Surface(
+                    modifier = Modifier.fillMaxWidth(),
+                    color = if (isIos) Color.White else SitaBlue,
+                    shadowElevation = 8.dp,
+                    tonalElevation = 4.dp
+                ) {
                     Row(
                         modifier = Modifier
                             .fillMaxWidth()
-                            .height(64.dp)
+                            .height(40.dp)
                             .padding(horizontal = 20.dp),
                         horizontalArrangement = Arrangement.SpaceBetween,
                         verticalAlignment = Alignment.CenterVertically
                     ) {
-                        // Title - Now centers within the 64dp row correctly
+                        // Title
                         Text(
                             text = displayName.replaceFirstChar { it.uppercase() },
-                            color = Color.White,
-                            fontSize = 18.sp,
+                            color = if (isIos) SitaBlue else Color.White,
+                            fontSize = 16.sp,
                             fontWeight = FontWeight.ExtraBold,
                             letterSpacing = 0.5.sp
                         )
 
-                        // Logout Button (White icon)
+                        // Logout Button
                         IconButton(
                             onClick = onBackClick,
-                            modifier = Modifier.size(44.dp)
+                            modifier = Modifier.size(32.dp)
                         ) {
                             Icon(
                                 imageVector = Icons.Default.ExitToApp,
                                 contentDescription = "Logout",
-                                tint = Color.White,
-                                modifier = Modifier.size(26.dp)
+                                tint = Color.Red,
+                                modifier = Modifier.size(20.dp)
                             )
                         }
                     }
