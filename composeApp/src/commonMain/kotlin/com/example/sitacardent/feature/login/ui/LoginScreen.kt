@@ -69,9 +69,9 @@ import kotlinx.coroutines.launch
 import org.jetbrains.compose.resources.painterResource
 
 
-import devisoft.composeapp.generated.resources.Res
-import devisoft.composeapp.generated.resources.sita_logo
-import devisoft.composeapp.generated.resources.devisoft_logo
+import sitacardent.composeapp.generated.resources.Res
+import sitacardent.composeapp.generated.resources.sita_logo
+import sitacardent.composeapp.generated.resources.devisoft_logo
 
 
 // Color definitions matching Android colors.xml

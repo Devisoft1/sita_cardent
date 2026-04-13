@@ -37,8 +37,8 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.compose.ui.zIndex
 import org.jetbrains.compose.resources.painterResource
-import devisoft.composeapp.generated.resources.Res
-import devisoft.composeapp.generated.resources.sita_logo
+import sitacardent.composeapp.generated.resources.Res
+import sitacardent.composeapp.generated.resources.sita_logo
 import com.example.sitacardent.DateUtils
 
 
