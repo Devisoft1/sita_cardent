@@ -20,14 +20,12 @@ import android.widget.ImageButton
 import android.widget.ImageView
 import android.widget.ScrollView
 import android.widget.TextView
-import android.widget.Toast
 import androidx.core.view.ViewCompat
 import androidx.core.view.WindowInsetsCompat
 import coil3.load
 import coil3.request.crossfade
 import coil3.request.placeholder
 import coil3.request.error
-import androidx.activity.enableEdgeToEdge
 import androidx.appcompat.app.AppCompatActivity
 import androidx.lifecycle.lifecycleScope
 import com.example.sitacardent.LocalStorage
@@ -38,13 +36,11 @@ import com.example.sitacardent.R
 import com.example.sitacardent.ScannedCardData
 import com.example.sitacardent.network.MemberRepository
 import com.example.sitacardent.model.VerifyMemberResponse
-import com.example.sitacardent.isCardExpired
+import com.example.sitacardent.DateUtils
 import com.google.android.material.textfield.TextInputEditText
-import kotlinx.coroutines.launch
 import java.nio.charset.Charset
-import kotlin.coroutines.resume
-import kotlin.coroutines.suspendCoroutine
-import kotlinx.coroutines.delay
+import android.os.Handler
+import android.os.Looper
 
 
 class NfcScanActivity : AppCompatActivity() {
@@ -80,12 +76,12 @@ class NfcScanActivity : AppCompatActivity() {
 
     private var images: List<String> = emptyList()
     private var currentImageIndex = 0
-    private val carouselHandler = android.os.Handler(android.os.Looper.getMainLooper())
+    private val carouselHandler = Handler(Looper.getMainLooper())
     private val carouselRunnable = object : Runnable {
         override fun run() {
             if (images.size > 1) {
                 currentImageIndex = (currentImageIndex + 1) % images.size
-                android.util.Log.d("LoginDebug", "NfcScanActivity - 10 seconds passed, rotating to image index $currentImageIndex")
+                Log.d("LoginDebug", "NfcScanActivity - 10 seconds passed, rotating to image index $currentImageIndex")
                 updateCarouselImage()
             }
             carouselHandler.postDelayed(this, 10000) // 10 seconds
@@ -103,7 +99,7 @@ class NfcScanActivity : AppCompatActivity() {
     private lateinit var etAmount: TextInputEditText
     private lateinit var btnCancel: Button
     private lateinit var btnConfirm: Button
-    private lateinit var pbLoader: android.widget.ProgressBar
+    private lateinit var pbLoader: View
 
     // Current Member Data
     private var currentVerifiedMemberId: Long? = null
@@ -134,14 +130,14 @@ class NfcScanActivity : AppCompatActivity() {
         val initialImageUrl = LocalStorage.getImageUrl()
         images = LocalStorage.getImages()
         
-        android.util.Log.d("LoginDebug", "NfcScanActivity - Stored Logo: $logoUrl")
-        android.util.Log.d("LoginDebug", "NfcScanActivity - Stored Image: $initialImageUrl")
-        android.util.Log.d("LoginDebug", "NfcScanActivity - Stored Images Count: ${images.size}")
+        Log.d("LoginDebug", "NfcScanActivity - Stored Logo: $logoUrl")
+        Log.d("LoginDebug", "NfcScanActivity - Stored Image: $initialImageUrl")
+        Log.d("LoginDebug", "NfcScanActivity - Stored Images Count: ${images.size}")
 
         if (!logoUrl.isNullOrBlank()) {
              val formattedLogo = if (logoUrl.startsWith("http")) logoUrl 
                                else "https://apisita.shanti-pos.com$logoUrl"
-             android.util.Log.d("LoginDebug", "NfcScanActivity - Initial Logo load: $formattedLogo")
+            Log.d("LoginDebug", "NfcScanActivity - Initial Logo load: $formattedLogo")
              imgLogo.load(formattedLogo) {
                  placeholder(R.drawable.sita_logo)
                  error(R.drawable.sita_logo)
@@ -152,7 +148,7 @@ class NfcScanActivity : AppCompatActivity() {
         if (!initialImageUrl.isNullOrBlank()) {
              val formattedUrl = if (initialImageUrl.startsWith("http")) initialImageUrl 
                               else "https://apisita.shanti-pos.com$initialImageUrl"
-             android.util.Log.d("LoginDebug", "NfcScanActivity - Initial Image load: $formattedUrl")
+            Log.d("LoginDebug", "NfcScanActivity - Initial Image load: $formattedUrl")
              imgBackgroundLogo.load(formattedUrl) {
                  crossfade(true)
              }
@@ -237,12 +233,12 @@ class NfcScanActivity : AppCompatActivity() {
         tvExpiryDate = findViewById<TextView>(R.id.tvExpiryDate)
         tvCurrentBalance = findViewById<TextView>(R.id.tvCurrentBalance)
         
-        cvTransaction = findViewById<View>(R.id.cvTransaction)
-        etAmount = findViewById<TextInputEditText>(R.id.etAmount)
-        btnCancel = findViewById<Button>(R.id.btnCancel)
-        btnConfirm = findViewById<Button>(R.id.btnConfirm)
-        pbLoader = findViewById<android.widget.ProgressBar>(R.id.pbLoader)
-        scrollView = findViewById<ScrollView>(R.id.scrollView)
+        cvTransaction = findViewById(R.id.cvTransaction)
+        etAmount = findViewById(R.id.etAmount)
+        btnCancel = findViewById(R.id.btnCancel)
+        btnConfirm = findViewById(R.id.btnConfirm)
+        pbLoader = findViewById(R.id.pbLoader)
+        scrollView = findViewById(R.id.scrollView)
         // Note: The ScrollView has android:id="@+id/scrollView" in activity_nfc_scan.xml
         
         // Handle IME insets manually because of enableEdgeToEdge()
@@ -260,7 +256,7 @@ class NfcScanActivity : AppCompatActivity() {
             insets
         }
 
-        findViewById<android.view.View>(R.id.llPoweredBy).setOnClickListener {
+        findViewById<View>(R.id.llPoweredBy).setOnClickListener {
             val intent = Intent(Intent.ACTION_VIEW, android.net.Uri.parse("https://devisoft.co.in"))
             startActivity(intent)
         }
@@ -292,8 +288,7 @@ class NfcScanActivity : AppCompatActivity() {
                 pbLoader.visibility = View.VISIBLE
                 btnStopScanning.visibility = View.VISIBLE
                 btnConfirm.isEnabled = false
-                android.os.Handler(android.os.Looper.getMainLooper()).postDelayed({
-                    onCardScanned(ScannedCardData("1001", "Test Company Ltd", "DDOO904GHYTEC", "debugPass123"))
+                Handler(Looper.getMainLooper()).postDelayed({
                     stopScanning()
                 }, 1000)
             }
@@ -503,7 +498,7 @@ class NfcScanActivity : AppCompatActivity() {
                     }
                 } else if (isScanning) {
                     val result = readMifareClassicData(it)
-                    result.onSuccess { data ->
+                    result.onSuccess { data: ScannedCardData ->
                         scannedData = data
                         onCardScanned(data)
                         stopScanning()
@@ -704,7 +699,7 @@ class NfcScanActivity : AppCompatActivity() {
     }
 
     private fun onCardScanned(data: ScannedCardData) {
-        if (isCardExpired(data.validity)) {
+        if (DateUtils.isCardExpired(data.validity)) {
             showResultPopup("Expired", "Card validity is expired", isError = true, onOk = ::resetState)
             stopScanning()
             return
@@ -725,9 +720,9 @@ class NfcScanActivity : AppCompatActivity() {
                 cardValidity = data.validity,
                 cardType = data.cardType
             )
-            result.onSuccess { response ->
+            result.onSuccess { response: VerifyMemberResponse ->
                 displayMemberInfo(response, data.cardMfid)
-            }.onFailure { e ->
+            }.onFailure { e: Throwable ->
                 Log.d(TAG, "Verify failed ($e), attempting fallback search for ID: ${data.memberId}")
                 val searchResult = repository.getMemberById(data.memberId, LocalStorage.getShopId() ?: 0)
                 
@@ -873,11 +868,12 @@ class NfcScanActivity : AppCompatActivity() {
                     password = currentPassword,
                     shopId = LocalStorage.getShopId() ?: 0
                 )
-                result.onSuccess { response ->
+                result.onSuccess { response: com.example.sitacardent.model.AddAmountResponse ->
+                    val amount = pendingWriteAmount?.toInt() ?: 0
                     val balanceFormatter = java.text.DecimalFormat("#,###.00")
                     val formattedTotal = balanceFormatter.format(response.newCardTotal)
                     showResultPopup("Success", "Transaction of ₹$amount completed", isError = false, onOk = ::resetState)
-                }.onFailure { e ->
+                }.onFailure { e: Throwable ->
                     pbLoader.visibility = View.GONE
                     showResultPopup("Transaction Failed", "Transaction Failed: ${e.message}", isError = true, onOk = ::resetState)
                     btnConfirm.isEnabled = true

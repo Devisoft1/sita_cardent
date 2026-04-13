@@ -39,7 +39,7 @@ import androidx.compose.ui.zIndex
 import org.jetbrains.compose.resources.painterResource
 import devisoft.composeapp.generated.resources.Res
 import devisoft.composeapp.generated.resources.sita_logo
-import com.example.sitacardent.isCardExpired
+import com.example.sitacardent.DateUtils
 
 
 // Android color constants - matching colors.xml exactly
@@ -50,14 +50,8 @@ private val TextSecondary = Color(0xFF757575)
 private val StatusGreen = Color(0xFF4CAF50)
 private val DividerColor = Color(0xFFEEEEEE)
 
-data class ScannedCardData(
-    val memberId: String,
-    val companyName: String,
-    val cardMfid: String,
-    val password: String,
-    val validity: String = "",
-    val cardType: String = ""
-)
+// ScannedCardData is now in its own file
+
 
 @OptIn(ExperimentalFoundationApi::class)
 @Composable
@@ -226,7 +220,7 @@ fun NfcScanScreen(
             return
         }
 
-        if (isCardExpired(cardValidity)) {
+        if (DateUtils.isCardExpired(cardValidity)) {
             apiError = "Card validity is expired"
             return
         }

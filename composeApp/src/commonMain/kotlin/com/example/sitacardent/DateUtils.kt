@@ -1,3 +1,5 @@
 package com.example.sitacardent
 
-expect fun isCardExpired(validity: String): Boolean
+expect object DateUtils {
+    fun isCardExpired(validity: String): Boolean
+}

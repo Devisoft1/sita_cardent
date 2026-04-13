@@ -172,7 +172,7 @@
                             android:id="@+id/tvMemberId"
                             android:layout_width="wrap_content"
                             android:layout_height="wrap_content"
-                            android:text="1005"
+                            tools:text="1005"
                             android:textColor="@color/black"
                             android:textSize="11sp"
                             android:textStyle="bold" />
@@ -224,7 +224,7 @@
                             android:id="@+id/tvCompanyName"
                             android:layout_width="wrap_content"
                             android:layout_height="wrap_content"
-                            android:text="Devisoft"
+                            tools:text="Devisoft"
                             android:textColor="@color/black"
                             android:textSize="11sp"
                             android:textStyle="bold" />
@@ -252,7 +252,7 @@
                             android:id="@+id/tvExpiryDate"
                             android:layout_width="wrap_content"
                             android:layout_height="wrap_content"
-                            android:text="2026-12-31"
+                            tools:text="2026-12-31"
                             android:textColor="@color/black"
                             android:textSize="11sp"
                             android:textStyle="bold" />
@@ -282,7 +282,7 @@
                             android:id="@+id/tvCurrentBalance"
                             android:layout_width="wrap_content"
                             android:layout_height="wrap_content"
-                            android:text="500.0"
+                            tools:text="500.0"
                             android:textColor="@color/black"
                             android:textSize="11sp"
                             android:textStyle="bold" />
