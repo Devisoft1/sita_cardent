@@ -869,10 +869,10 @@ class NfcScanActivity : AppCompatActivity() {
                     shopId = LocalStorage.getShopId() ?: 0
                 )
                 result.onSuccess { response: com.example.sitacardent.model.AddAmountResponse ->
-                    val amount = pendingWriteAmount?.toInt() ?: 0
+                    val addedAmount = response.addedAmount?.toInt() ?: amount
                     val balanceFormatter = java.text.DecimalFormat("#,###.00")
                     val formattedTotal = balanceFormatter.format(response.newCardTotal)
-                    showResultPopup("Success", "Transaction of ₹$amount completed", isError = false, onOk = ::resetState)
+                    showResultPopup("Success", "Transaction of ₹$addedAmount completed", isError = false, onOk = ::resetState)
                 }.onFailure { e: Throwable ->
                     pbLoader.visibility = View.GONE
                     showResultPopup("Transaction Failed", "Transaction Failed: ${e.message}", isError = true, onOk = ::resetState)
@@ -883,6 +883,7 @@ class NfcScanActivity : AppCompatActivity() {
     }
 
     private fun showResultPopup(title: String, message: String, isError: Boolean = true, onOk: (() -> Unit)? = null) {
+        if (isFinishing || isDestroyed) return
         val builder = com.google.android.material.dialog.MaterialAlertDialogBuilder(this)
         builder.setTitle(title)
         builder.setMessage(message)
@@ -954,6 +955,7 @@ class NfcScanActivity : AppCompatActivity() {
     override fun onStop() {
         super.onStop()
         carouselHandler.removeCallbacks(carouselRunnable)
+        countDownTimer?.cancel()
     }
 
     private fun updateCarouselImage() {
