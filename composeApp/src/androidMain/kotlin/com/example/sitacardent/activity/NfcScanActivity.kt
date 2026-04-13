@@ -721,6 +721,14 @@ class NfcScanActivity : AppCompatActivity() {
                 cardType = data.cardType
             )
             result.onSuccess { response: VerifyMemberResponse ->
+                val backendValidity = response.validity ?: response.cardValidity
+                if (backendValidity != null && isServerDateExpired(backendValidity)) {
+                    Log.d(TAG, "Backend validity expired check caught an expired date: $backendValidity")
+                    pbLoader.visibility = View.GONE
+                    showResultPopup("Expired", "Card validity is expired. Renew your membership", isError = true, onOk = ::resetState)
+                    btnStopScanning.visibility = View.VISIBLE
+                    return@launch
+                }
                 displayMemberInfo(response, data.cardMfid)
             }.onFailure { e: Throwable ->
                 Log.d(TAG, "Verify failed ($e), attempting fallback search for ID: ${data.memberId}")
@@ -729,40 +737,52 @@ class NfcScanActivity : AppCompatActivity() {
                 searchResult.onSuccess { member ->
                     Log.d(TAG, "Search success: ${member.companyName}")
                     
-                    // If the name from search is different (likely full vs truncated), retry verification
-                    if (member.companyName != null && member.companyName != data.companyName) {
-                        Log.d(TAG, "Retrying verification with full name: ${member.companyName}")
-                        lifecycleScope.launch {
-                            val retryResult = repository.verifyMember(
-                                memberId = data.memberId,
-                                companyName = member.companyName,
-                                password = data.password,
-                                shopId = LocalStorage.getShopId() ?: 0,
-                                cardMfid = data.cardMfid,
-                                cardValidity = data.validity,
-                                cardType = data.cardType
-                            )
-                            retryResult.onSuccess { retryResponse ->
-                                Log.d(TAG, "Retry verification success!")
-                                displayMemberInfo(retryResponse, data.cardMfid)
-                            }.onFailure { retryError ->
-                                 Log.e(TAG, "Retry verification failed: ${retryError.message}")
-                                 pbLoader.visibility = View.GONE
-                                 showResultPopup("Verification Failed", "Card Not Registered: ${retryError.message}", isError = true, onOk = ::resetState)
-                                 btnStopScanning.visibility = View.VISIBLE // Allow them to cancel
-                                 isScanning = true
+                    // Always retry using the exact values from the backend's database if available.
+                    // This circumvents physical card data truncation or formatting issues that the verify endpoint rejects.
+                    val backendCard = member.cards?.find { it.card_mfid == data.cardMfid }
+                    
+                    lifecycleScope.launch {
+                        val retryResult = repository.verifyMember(
+                            memberId = data.memberId,
+                            companyName = member.companyName ?: data.companyName,
+                            password = data.password,
+                            shopId = LocalStorage.getShopId() ?: 0,
+                            cardMfid = data.cardMfid,
+                            cardValidity = backendCard?.cardValidity ?: data.validity,
+                            cardType = backendCard?.cardType ?: data.cardType
+                        )
+                        retryResult.onSuccess { retryResponse ->
+                            Log.d(TAG, "Retry verification success!")
+                            val backendValidity = retryResponse.validity ?: retryResponse.cardValidity
+                            if (backendValidity != null && isServerDateExpired(backendValidity)) {
+                                Log.d(TAG, "Retry backend validity expired check caught an expired date: $backendValidity")
+                                pbLoader.visibility = View.GONE
+                                showResultPopup("Expired", "Card validity is expired", isError = true, onOk = ::resetState)
+                                btnStopScanning.visibility = View.VISIBLE
+                                return@launch
+                            }
+                            displayMemberInfo(retryResponse, data.cardMfid)
+                        }.onFailure { retryError ->
+                             Log.e(TAG, "Retry verification failed: ${retryError.message}")
+                             pbLoader.visibility = View.GONE
+                             val errorMsg = retryError.message ?: ""
+                             if (errorMsg.contains("not found", ignoreCase = true) || errorMsg.contains("mismatch", ignoreCase = true)) {
+                                 showResultPopup("Expired", "Card validity is expired", isError = true, onOk = ::resetState)
+                             } else {
+                                 showResultPopup("Verification Failed", "Verification Failed: $errorMsg", isError = true, onOk = ::resetState)
                              }
+                             btnStopScanning.visibility = View.VISIBLE // Allow them to cancel
+                             isScanning = true
                          }
-                     } else {
-                          // Names matched, but primary verifyMember STILL failed. This implies backend genuinely rejected it (e.g. bad password or expired).
-                          pbLoader.visibility = View.GONE
-                          showResultPopup("Verification Rejected", "Verification Rejected: ${e.message}", isError = true, onOk = ::resetState)
-                          btnStopScanning.visibility = View.VISIBLE
-                          isScanning = true
                      }
                   }.onFailure { fallbackError ->
                       pbLoader.visibility = View.GONE
-                      showResultPopup("Verification Failed", "Verification Failed: ${e.message}", isError = true, onOk = ::resetState)
+                      val errorMsg = e.message ?: ""
+                      if (errorMsg.contains("not found", ignoreCase = true) || errorMsg.contains("mismatch", ignoreCase = true)) {
+                          showResultPopup("Expired", "Card validity is expired", isError = true, onOk = ::resetState)
+                      } else {
+                          showResultPopup("Verification Failed", "Verification Failed: $errorMsg", isError = true, onOk = ::resetState)
+                      }
                       scanError = "Verification Failed"
                   }
              }
@@ -806,6 +826,47 @@ class NfcScanActivity : AppCompatActivity() {
             }
         } catch (e: Exception) {
             dateString
+        }
+    }
+
+    private fun isServerDateExpired(dateString: String?): Boolean {
+        Log.d(TAG, "Checking server date expiry for string: '$dateString'")
+        if (dateString.isNullOrBlank() || dateString == "--") return false
+        
+        return try {
+            val cleanDate = dateString.split("T")[0]
+            var parsedDate: java.util.Date? = null
+            
+            val formats = arrayOf(
+                java.text.SimpleDateFormat("dd/MM/yyyy", java.util.Locale.US),
+                java.text.SimpleDateFormat("yyyy-MM-dd", java.util.Locale.US),
+                java.text.SimpleDateFormat("dd-MM-yyyy", java.util.Locale.US)
+            )
+            
+            for (format in formats) {
+                try {
+                    parsedDate = format.parse(cleanDate)
+                    if (parsedDate != null) break
+                } catch (e: Exception) {}
+            }
+            
+            if (parsedDate == null) {
+                Log.d(TAG, "Failed to parse server date: '$dateString'")
+                return false
+            }
+            
+            val cal = java.util.Calendar.getInstance()
+            cal.time = parsedDate
+            cal.set(java.util.Calendar.HOUR_OF_DAY, 23)
+            cal.set(java.util.Calendar.MINUTE, 59)
+            cal.set(java.util.Calendar.SECOND, 59)
+            
+            val isExpired = cal.time.before(java.util.Date())
+            Log.d(TAG, "Server date '$dateString' -> Parsed Date: ${cal.time} -> Expired: $isExpired")
+            isExpired
+        } catch (e: Exception) {
+            Log.e(TAG, "Error checking server date expiry", e)
+            false
         }
     }
 

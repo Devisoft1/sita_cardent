@@ -75,5 +75,7 @@ data class MemberDto(
 @Serializable
 data class CardDto(
     val card_mfid: String,
-    val password: String
+    val password: String,
+    val cardValidity: String? = null,
+    val cardType: String? = null
 )
