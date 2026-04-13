@@ -700,7 +700,7 @@ class NfcScanActivity : AppCompatActivity() {
 
     private fun onCardScanned(data: ScannedCardData) {
         if (DateUtils.isCardExpired(data.validity)) {
-            showResultPopup("Expired", "Card validity is expired", isError = true, onOk = ::resetState)
+            showResultPopup("Expired", "Card validity is expired. Renew your membership", isError = true, onOk = ::resetState)
             stopScanning()
             return
         }
@@ -757,7 +757,7 @@ class NfcScanActivity : AppCompatActivity() {
                             if (backendValidity != null && isServerDateExpired(backendValidity)) {
                                 Log.d(TAG, "Retry backend validity expired check caught an expired date: $backendValidity")
                                 pbLoader.visibility = View.GONE
-                                showResultPopup("Expired", "Card validity is expired", isError = true, onOk = ::resetState)
+                                showResultPopup("Expired", "Card validity is expired. Renew your membership", isError = true, onOk = ::resetState)
                                 btnStopScanning.visibility = View.VISIBLE
                                 return@launch
                             }
@@ -767,7 +767,7 @@ class NfcScanActivity : AppCompatActivity() {
                              pbLoader.visibility = View.GONE
                              val errorMsg = retryError.message ?: ""
                              if (errorMsg.contains("not found", ignoreCase = true) || errorMsg.contains("mismatch", ignoreCase = true)) {
-                                 showResultPopup("Expired", "Card validity is expired", isError = true, onOk = ::resetState)
+                                 showResultPopup("Expired", "Card validity is expired. Renew your membership", isError = true, onOk = ::resetState)
                              } else {
                                  showResultPopup("Verification Failed", "Verification Failed: $errorMsg", isError = true, onOk = ::resetState)
                              }
@@ -779,7 +779,7 @@ class NfcScanActivity : AppCompatActivity() {
                       pbLoader.visibility = View.GONE
                       val errorMsg = e.message ?: ""
                       if (errorMsg.contains("not found", ignoreCase = true) || errorMsg.contains("mismatch", ignoreCase = true)) {
-                          showResultPopup("Expired", "Card validity is expired", isError = true, onOk = ::resetState)
+                          showResultPopup("Expired", "Card validity is expired. Renew your membership", isError = true, onOk = ::resetState)
                       } else {
                           showResultPopup("Verification Failed", "Verification Failed: $errorMsg", isError = true, onOk = ::resetState)
                       }
