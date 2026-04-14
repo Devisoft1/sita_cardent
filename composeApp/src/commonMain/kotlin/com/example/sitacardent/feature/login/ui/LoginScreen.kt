@@ -66,6 +66,7 @@ import androidx.compose.ui.unit.sp
 import androidx.compose.ui.zIndex
 import com.example.sitacardent.network.AuthRepository
 import kotlinx.coroutines.launch
+import com.example.sitacardent.isNetworkAvailable
 import org.jetbrains.compose.resources.painterResource
 
 
@@ -175,6 +176,7 @@ fun LoginScreen(onLoginSuccess: (String) -> Unit) {
     var passwordVisible by remember { mutableStateOf(false) }
     var rememberMe by remember { mutableStateOf(isRememberMe) }
     var showForgotPasswordDialog by remember { mutableStateOf(false) }
+    var showNoInternetDialog by remember { mutableStateOf(false) }
     
     val scope = rememberCoroutineScope()
     val authRepository = remember { AuthRepository() }
@@ -182,9 +184,21 @@ fun LoginScreen(onLoginSuccess: (String) -> Unit) {
     Box(
         modifier = Modifier.fillMaxSize()
     ) {
+        if (showNoInternetDialog) {
+            androidx.compose.material3.AlertDialog(
+                onDismissRequest = { showNoInternetDialog = false },
+                title = { Text("No Internet") },
+                text = { Text("No Internet Connection. Please connect to the internet to proceed.") },
+                confirmButton = {
+                    androidx.compose.material3.TextButton(onClick = { showNoInternetDialog = false }) {
+                        Text("OK")
+                    }
+                }
+            )
+        }
+        
         // Modern Geometric Background
         GeometricBackground()
-        
 
 
         Column(
@@ -331,6 +345,10 @@ fun LoginScreen(onLoginSuccess: (String) -> Unit) {
                     // Login Button
                     Button(
                         onClick = {
+                            if (!isNetworkAvailable()) {
+                                showNoInternetDialog = true
+                                return@Button
+                            }
                             if (email.isNotBlank() && password.isNotBlank()) {
                                 isLoading = true
                                 errorMessage = null

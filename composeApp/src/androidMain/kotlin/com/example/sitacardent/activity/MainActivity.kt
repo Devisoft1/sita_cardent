@@ -13,6 +13,8 @@ import androidx.lifecycle.lifecycleScope
 import coil3.load
 import coil3.request.crossfade
 import com.example.sitacardent.LocalStorage
+import com.example.sitacardent.PlatformContext
+import com.example.sitacardent.isNetworkAvailable
 
 import com.example.sitacardent.R
 import com.example.sitacardent.network.AuthRepository
@@ -32,39 +34,11 @@ class MainActivity : AppCompatActivity() {
 
         // Initialize LocalStorage
         LocalStorage.init(this)
+        PlatformContext.context = this
 
-        // If already logged in, skip to NFC Scan
-        // Note: The original code didn't check this explicitly in onCreate for the shared logic,
-        // but App.kt did. We should replicate that behavior if we want auto-login.
-        if (LocalStorage.getAuthToken() != null) {
-            // Background refresh of shop profile data (logo, images)
-            lifecycleScope.launch {
-                LocalStorage.getAuthToken()?.let { token ->
-                    authRepository.getProfile(token, LocalStorage.getShopUId(), LocalStorage.getShopId()).onSuccess { response ->
-                        if (!response.name.isNullOrBlank()) {
-                            val logoUrl = response.logo?.let { logoPath ->
-                                if (logoPath.startsWith("http")) logoPath
-                                else "https://apisita.shanti-pos.com$logoPath"
-                            }
-                            LocalStorage.saveAuth(
-                                token = token,
-                                name = response.name,
-                                email = response.email,
-                                shopId = response.shopId,
-                                logoUrl = logoUrl ?: LocalStorage.getLogoUrl(),
-                                images = if (response.images.isNullOrEmpty()) LocalStorage.getImages() else response.images,
-                                shopUId = response._id
-                            )
-                            android.util.Log.d("LoginDebug", "MainActivity - Profile refreshed successfully.")
-                        }
-                    }
-
-
-                }
-            }
-            navigateToNfcScanAndFinish()
-            return
-        }
+        // Always show Login screen on app start as requested
+        // Background refresh of shop profile data (logo, images) is removed from auto-start
+        // to ensure it starts with Login page.
 
 
         val etEmail = findViewById<TextInputEditText>(R.id.etEmail)
@@ -114,6 +88,14 @@ class MainActivity : AppCompatActivity() {
         })
 
         btnLogin.setOnClickListener {
+            if (!isNetworkAvailable()) {
+                com.google.android.material.dialog.MaterialAlertDialogBuilder(this)
+                    .setTitle("No Internet")
+                    .setMessage("No Internet Connection. Please connect to the internet to proceed.")
+                    .setPositiveButton("OK", null)
+                    .show()
+                return@setOnClickListener
+            }
             val email = etEmail.text.toString().trim()
             val password = etPassword.text.toString().trim()
 
