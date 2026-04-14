@@ -677,7 +677,7 @@ class NfcScanActivity : AppCompatActivity() {
 
             } else {
                 Log.e(TAG, "Sector 3 Failed to authenticate")
-                return Result.failure(Exception("Card Authentication Failed"))
+                return Result.failure(Exception("Card not detected properly please scan again"))
             }
         } catch (e: Exception) {
             Log.e(TAG, "Read Error during execution", e)
